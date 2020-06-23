@@ -54,8 +54,77 @@ Here's a log of the compilation, spawning, using and stopping the server:
     ok
     9>
 
+And some more after placing loop recursion where it belongs: at the end of
+the function, not inside the case statement.
+
+.. code:: erlang
+
+    Erlang/OTP 22 [erts-10.7.2] [source] [64-bit] [smp:8:8] [ds:8:8:10] [async-threads:1] [hipe] [dtrace]
+
+    Eshell V10.7.2  (abort with ^G)
+    1> c("/Users/roup/doc/trying-erlang/exercises/e1/palind", [{outdir, "/Users/roup/doc/trying-erlang/exercises/e1/"}]).
+    c("/Users/roup/doc/trying-erlang/exercises/e1/palind", [{outdir, "/Users/roup/doc/trying-erlang/exercises/e1/"}]).
+    {ok,palind}
+    2> Self = self().
+    Self = self().
+    <0.79.0>
+    3> Server = spawn(palind, server, [Self]).
+    Server = spawn(palind, server, [Self]).
+    <0.87.0>
+    4> Server ! {check, "abc"}.
+    Server ! {check, "abc"}.
+    {check,"abc"}
+    5> Server ! {check, "def"}.
+    Server ! {check, "def"}.
+    {check,"def"}
+    6> Server ! {check, "Madam I\'m Adam"}.
+    Server ! {check, "Madam I\'m Adam"}.
+    {check,"Madam I'm Adam"}
+    7> Server ! {check, "Madam I\'m not Adam"}.
+    Server ! {check, "Madam I\'m not Adam"}.
+    {check,"Madam I'm not Adam"}
+    8> flush().
+    flush().
+    Shell got {result,"\"abc\" is not a palindrome."}
+    Shell got {result,"\"def\" is not a palindrome."}
+    Shell got {result,"\"Madam I'm Adam\" is a palindrome"}
+    Shell got {result,"\"Madam I'm not Adam\" is not a palindrome."}
+    ok
+    9> Server ! {check, "oh! ho!"}.
+    Server ! {check, "oh! ho!"}.
+    {check,"oh! ho!"}
+    10> Server ! {check, "oh! no!"}.
+    Server ! {check, "oh! no!"}.
+    {check,"oh! no!"}
+    11> flush().
+    flush().
+    Shell got {result,"\"oh! ho!\" is not a palindrome."}
+    Shell got {result,"\"oh! no!\" is not a palindrome."}
+    ok
+    12> Server ! {check, "Never odd or even"}.
+    Server ! {check, "Never odd or even"}.
+    {check,"Never odd or even"}
+    13> flush().
+    flush().
+    Shell got {result,"\"Never odd or even\" is a palindrome"}
+    ok
+    14>
+
 .. _first exercise: https://www.futurelearn.com/courses/concurrent-programming-erlang/3/steps/488334
 .. _palind.erl:     palind.erl
+
+
+Looking Back
+------------
+
+One aspect of Erlang I find difficult is to remember how to separate and
+terminate statements.  It's a problem that never occurs in Algol-derived
+or so call curly-brace programming languages.  Lisp-like programming languages
+also don't suffer from this: use a Lisp aware editor and you can depend on it
+to properly highlight the S-expressions and balance the parentheses.
+
+My first version of the code had a bug in it because the loop call was inside
+the case statement.  I fixed that int he second version.
 
 
 Flexible and Hidden Server
