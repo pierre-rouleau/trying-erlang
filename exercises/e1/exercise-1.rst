@@ -17,6 +17,7 @@ only reply to the instantiating process.  Used with the shell it forces
 manipulations to extract the replies.  It exposes only one function: the
 server itself.
 
+
 Here's a log of the compilation, spawning, using and stopping the server:
 
 .. code:: erlang
@@ -53,11 +54,17 @@ Here's a log of the compilation, spawning, using and stopping the server:
     ok
     9>
 
+.. _first exercise: https://www.futurelearn.com/courses/concurrent-programming-erlang/3/steps/488334
+.. _palind.erl:     palind.erl
+
 
 Flexible and Hidden Server
 ==========================
 
-- File: epalind.erl
+The second implementation uses 2 files:
+
+- File 1: palindc.erl_  : the client code
+- File 2: palinds.erl_   : the server code
 
 This  does a little bit more by encapsulating the protocol between a
 client and a server.  This implementation hides the server and exposes a
@@ -65,11 +72,10 @@ single function that hides the client/server implementation: the function
 takes a string and returns a tuple of {status, string} that describes a
 success or failure.
 
-I have not yet written that file.  I'll do that soon.
 
 
-.. _first exercise: https://www.futurelearn.com/courses/concurrent-programming-erlang/3/steps/488334
-.. _palind.erl:     palind.erl
+.. _palindc.erl: palindc.erl
+.. _palinds.erl: palinds.erl
 
 
 ..
