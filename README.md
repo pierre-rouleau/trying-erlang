@@ -13,7 +13,7 @@ I also have a separate repository of various notes [about Erlang](https://github
 use for developing Erlang-based code among other things.
 
 I have always been interested in various programming languages and Lisp is
-another. Because of that I started learning Emacs in the last year and have
+one of them. Because of that I started learning Emacs in the last year and have
 created a project where I document what I learn and create a environment that
 should be easy to use for new Emacs users and integrates a growing number of
 Emacs internal and external packages.
