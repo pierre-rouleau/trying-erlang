@@ -114,6 +114,60 @@ the function, not inside the case statement.
 .. _palind.erl:     palind.erl
 
 
+Well, the first version worked better since it stopped the server properly.
+But It let invalid messages accumulate in the server's mailbox.
+So I updated it again, and made sure to discard invalid messages and to stop
+the server when asked.
+
+The session with the new instance is shown here:
+
+.. code:: erlang
+
+
+    Erlang/OTP 22 [erts-10.7.2] [source] [64-bit] [smp:8:8] [ds:8:8:10] [async-threads:1] [hipe] [dtrace]
+
+    Eshell V10.7.2  (abort with ^G)
+    1> c("/Users/roup/doc/trying-erlang/exercises/e1/palind", [{outdir, "/Users/roup/doc/trying-erlang/exercises/e1/"}]).
+    c("/Users/roup/doc/trying-erlang/exercises/e1/palind", [{outdir, "/Users/roup/doc/trying-erlang/exercises/e1/"}]).
+    {ok,palind}
+    2> Server = spawn(palind, server, [self()]).
+    Server = spawn(palind, server, [self()]).
+    <0.86.0>
+    3> Server ! "invalidly formatted message".
+    Server ! "invalidly formatted message".
+    "invalidly formatted message"
+    4> Server ! {check, "ahha"}.
+    Server ! {check, "ahha"}.
+    {check,"ahha"}
+    5> Server ! {check, "never odd or even"}.
+    Server ! {check, "never odd or even"}.
+    {check,"never odd or even"}
+    6> Server ! {check, "Madam I\'m Adam"}.
+    Server ! {check, "Madam I\'m Adam"}.
+    {check,"Madam I'm Adam"}
+    7> Server ! {check, "abc"}.
+    Server ! {check, "abc"}.
+    {check,"abc"}
+    8> flush().
+    flush().
+    Shell got {result,"\"ahha\" is a palindrome"}
+    Shell got {result,"\"never odd or even\" is a palindrome"}
+    Shell got {result,"\"Madam I'm Adam\" is a palindrome"}
+    Shell got {result,"\"abc\" is not a palindrome."}
+    ok
+    9> Server ! stop.
+    Server ! stop.
+    Server stopped.
+    stop
+    10> Server ! {check, "abc"}.
+    Server ! {check, "abc"}.
+    {check,"abc"}
+    11> flush().
+    flush().
+    ok
+    12>
+
+
 Looking Back
 ------------
 
@@ -123,8 +177,14 @@ or so call curly-brace programming languages.  Lisp-like programming languages
 also don't suffer from this: use a Lisp aware editor and you can depend on it
 to properly highlight the S-expressions and balance the parentheses.
 
-My first version of the code had a bug in it because the loop call was inside
-the case statement.  I fixed that int he second version.
+At first I thought my first version of the code had a bug in it because the
+loop call was inside the case statement.  I also thought that int the second
+version.  But instead I prevented the server to stop.
+The version 3 of the file handles invalid messages, removing them from the
+server mailbox, and then loops when valid and invalid messages are received,
+it does not loop when a stop requested is received.
+
+
 
 
 Flexible and Hidden Server

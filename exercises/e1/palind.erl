@@ -37,9 +37,10 @@ server(Pid) ->
             case palindrome_check(Text) of
                 true  -> Pid ! {result, quoted(Text) ++ " is a palindrome"};
                 false -> Pid ! {result, quoted(Text) ++ " is not a palindrome."}
-            end
-    end,
-    server(Pid).
+            end,
+            server(Pid);
+        _Other -> server(Pid)           % ignore other messages but continue serving.
+    end.
 
 %% -- Base logic
 
