@@ -18,8 +18,8 @@ loop() ->
             From ! {ok, stopped};
         {From, check, Text} ->
             case palindrome_check(Text) of
-                true  -> From ! {is_a_palindrome, quoted(Text) ++ " is a palindrome"};
-                false -> From ! {not_a_palindrome, quoted(Text) ++ " is not a palindrome."}
+                true  -> From ! {self(), {is_a_palindrome, quoted(Text) ++ " is a palindrome"}};
+                false -> From ! {self(), {not_a_palindrome, quoted(Text) ++ " is not a palindrome."}}
             end,
             loop();
         _Other  -> loop()

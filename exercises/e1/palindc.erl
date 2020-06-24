@@ -19,17 +19,17 @@ stop(Server) -> Server ! stop.
 is_palindrome(Server, Text) ->
     Server ! {self(), check, Text},
     receive
-        {is_a_palindrome, _}  -> true;
-        {not_a_palindrome, _} -> false;
-        _Other                -> {error, _Other}
+        {Server, {is_a_palindrome, _}}  -> true;
+        {Server, {not_a_palindrome, _}} -> false;
+        _Other                          -> {error, _Other}
     end.
 
 check_palindrome(Server, Text) ->
     Server ! {self(), check, Text},
     receive
-        {is_a_palindrome,  Report} -> {ok, Report};
-        {not_a_palindrome, Report} -> {false, Report};
-        _Other                     -> {error, _Other}
+        {Server, {is_a_palindrome,  Report}} -> {ok, Report};
+        {Server, {not_a_palindrome, Report}} -> {false, Report};
+        _Other                               -> {error, _Other}
 
     end.
 
