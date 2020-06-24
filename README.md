@@ -26,7 +26,7 @@ Hopefully I'll have enough time to do something useful.
 
 The list of exercises follows:
 
-- [Exercise 1](exercises/e1/exercise-1.rst)
+- [Exercise 1: Palindrome Checking Server](exercises/e1/exercise-1.rst)
 
 
 
