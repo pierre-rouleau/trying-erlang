@@ -14,12 +14,12 @@ loop() ->
     receive
         stop ->
             io:format("Palindrome checker server stopped.~n");
-        {Client, stop} ->
-            Client ! {ok, stopped};
-        {Client, check, Text} ->
+        {From, stop} ->
+            From ! {ok, stopped};
+        {From, check, Text} ->
             case palindrome_check(Text) of
-                true  -> Client ! {is_a_palindrome, quoted(Text) ++ " is a palindrome"};
-                false -> Client ! {not_a_palindrome, quoted(Text) ++ " is not a palindrome."}
+                true  -> From ! {is_a_palindrome, quoted(Text) ++ " is a palindrome"};
+                false -> From ! {not_a_palindrome, quoted(Text) ++ " is not a palindrome."}
             end,
             loop();
         _Other  -> loop()
