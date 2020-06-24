@@ -22,3 +22,13 @@ I called that project PEL
 I'll try to get some time to add Erlang
 facilities to PEL during the time I am following this course.
 Hopefully I'll have enough time to do something useful.
+
+
+The list of exercises follows:
+
+- [Exercise 1](exercises/e1/exercise-1.rst)
+
+
+
+
+<!-- ----------------------------------------------------------------------------- -->
