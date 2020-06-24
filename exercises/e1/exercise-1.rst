@@ -265,6 +265,21 @@ Here's a session using this code, with an Erlang shell running inside Emacs:
     Process inferior-erlang finished
 
 
+Code Improvements
+-----------------
+
+After the first implementation I did the following changes:
+
+- Renamed the variable `Client` to `From`.  Both are valid, but the second is
+  shorter and seems to be used more often in Erlang.  In an environment where
+  everything is a communication channel link, `From` is probably a little more
+  flexible.
+- There was nothing preventing some other process from sending some answers
+  back to the client, so I modified the protocol between palindc_ and palinds_
+  such that the Pid of the server is part of the reply message, allowing the
+  client to discard messages received from some other processes.
+
+
 
 
 Looking Back
@@ -297,8 +312,9 @@ I'd like to be able to find a way to do this with a BEAM system.  At this
 point I don't see how this can be done.  Hopefully I'll learn how to do it in
 Erlang later in my readings and in this course.
 
-
+.. _palindc:
 .. _palindc.erl: palindc.erl
+.. _palinds:
 .. _palinds.erl: palinds.erl
 
 
