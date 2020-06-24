@@ -1,3 +1,6 @@
+# Identifies files to be ignored by Git.
+
+# Untracked Erlang files
 .eunit
 *.o
 *.beam
@@ -15,3 +18,10 @@ deps
 .rebar3
 _build/
 _checkouts/
+
+# Emacs Backup files
+*~
+
+# Emacs temporary files
+.#*
+*#
