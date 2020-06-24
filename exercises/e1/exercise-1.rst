@@ -124,6 +124,7 @@ The session with the new instance is shown here:
 .. code:: erlang
 
 
+
     Erlang/OTP 22 [erts-10.7.2] [source] [64-bit] [smp:8:8] [ds:8:8:10] [async-threads:1] [hipe] [dtrace]
 
     Eshell V10.7.2  (abort with ^G)
@@ -196,11 +197,105 @@ The second implementation uses 2 files:
 - File 2: palinds.erl_   : the server code
 
 This  does a little bit more by encapsulating the protocol between a
-client and a server.  This implementation hides the server and exposes a
-single function that hides the client/server implementation: the function
-takes a string and returns a tuple of {status, string} that describes a
-success or failure.
+client and a server.
 
+The client is `palindc.erl`_ exposes 4 functions: the start/0 and stop/1
+which must be called to start the server and stop it, and the two
+palindrome verification functions, is_palindrome/2 and
+check_palindrome/2.  Their first argument is the server, and their second
+is the  string to check.
+
+This implementation does not hide the server process ID as I would have like
+to do, but it hides the protocol from the user.  I would have liked to place
+all protocol details inside one code location (one file), but that's not dome
+here.
+
+
+Here's a session using this code, with an Erlang shell running inside Emacs:
+
+.. code:: erlang
+
+    Erlang/OTP 22 [erts-10.7.2] [source] [64-bit] [smp:8:8] [ds:8:8:10] [async-threads:1] [hipe] [dtrace]
+
+    Eshell V10.7.2  (abort with ^G)
+    1> c("/Users/roup/doc/trying-erlang/exercises/e1/palindc", [{outdir, "/Users/roup/doc/trying-erlang/exercises/e1/"}]).
+    c("/Users/roup/doc/trying-erlang/exercises/e1/palindc", [{outdir, "/Users/roup/doc/trying-erlang/exercises/e1/"}]).
+    {ok,palindc}
+    2> c("/Users/roup/doc/trying-erlang/exercises/e1/palinds", [{outdir, "/Users/roup/doc/trying-erlang/exercises/e1/"}]).
+    c("/Users/roup/doc/trying-erlang/exercises/e1/palinds", [{outdir, "/Users/roup/doc/trying-erlang/exercises/e1/"}]).
+    {ok,palinds}
+    3> Server = palindc:start().
+    Server = palindc:start().
+    <0.91.0>
+    4> palindc:is_palindrome(Server, "never odd or even").
+    palindc:is_palindrome(Server, "never odd or even").
+    true
+    5> palindc:check_palindrome(Server, "never odd or even").
+    palindc:check_palindrome(Server, "never odd or even").
+    {ok,"\"never odd or even\" is a palindrome"}
+    6> palindc:check_palindrome(Server, "Madam, I'm Adam").
+    palindc:check_palindrome(Server, "Madam, I'm Adam").
+    {false,"\"Madam, I'm Adam\" is not a palindrome."}
+    7> palindc:check_palindrome(Server, "Madam I'm Adam").
+    palindc:check_palindrome(Server, "Madam I'm Adam").
+    {ok,"\"Madam I'm Adam\" is a palindrome"}
+    8> palindc:check_palindrome(Server, "Madam I\'m Adam").
+    palindc:check_palindrome(Server, "Madam I\'m Adam").
+    {ok,"\"Madam I'm Adam\" is a palindrome"}
+    9> palindc:check_palindrome(Server, "abc").
+    palindc:check_palindrome(Server, "abc").
+    {false,"\"abc\" is not a palindrome."}
+    10> palindc:is_palindrome(Server, "abc").
+    palindc:is_palindrome(Server, "abc").
+    false
+    11> palindc:stop().
+    palindc:stop().
+    ** exception error: undefined function palindc:stop/0
+    12> palindc:stop(Server).
+    palindc:stop(Server).
+    Palindrome checker server stopped.
+    stop
+    13> palindc:is_palindrome(Server, "never odd or even").
+    palindc:is_palindrome(Server, "never odd or even").
+      C-c C-c
+    BREAK: (a)bort (A)bort with dump (c)ontinue (p)roc info (i)nfo
+           (l)oaded (v)ersion (k)ill (D)b-tables (d)istribution
+    a
+
+    Process inferior-erlang finished
+
+
+
+
+Looking Back
+------------
+
+The user of this code must be aware that calling palindc:is_palindrome() and
+palindc:check_palindrome() *must* be done while their server is running.
+Otherwise, as shown after I stopped the server, their call just hang.
+
+I' would have liked to find a way to detect that their server is not running
+and if it was not these functions would spawn the server.  Ideally, the
+functions would also have the ability to hold the PID of their server so the
+user would not have to know about them.  That might not be the way of thinking
+in Erlang.  I'm not sure.
+
+
+Over time I have found that distribution of logic increases the probability of
+making errors.  Using a build system that is able to detect mismatches in the
+protocol also helps.  Back in the 90's I built a complete network management
+system with it's own management protocol in C++ with an embedded pseudo mini
+language using specialized comments and the C pre-processor.  The complete
+protocol was based on binary data structure and types were known and checked
+both statically and also dynamically at some gates in the system.  That made
+creating data structure a little bit more painful because of the extra code
+required to annotate the C data structures, but that really paid off.  Over 15
+years of this system being deployed in the field we never had 1 bug detected
+on protocol mismatch.
+
+I'd like to be able to find a way to do this with a BEAM system.  At this
+point I don't see how this can be done.  Hopefully I'll learn how to do it in
+Erlang later in my readings and in this course.
 
 
 .. _palindc.erl: palindc.erl
