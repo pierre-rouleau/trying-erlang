@@ -25,3 +25,6 @@ _checkouts/
 # Emacs temporary files
 .#*
 *#
+
+# macOS fork files
+.DS_Store
