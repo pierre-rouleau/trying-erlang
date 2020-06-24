@@ -279,7 +279,105 @@ After the first implementation I did the following changes:
   such that the Pid of the server is part of the reply message, allowing the
   client to discard messages received from some other processes.
 
+And then yet another change: adding a timeout in the client in case the server
+was stopped.  The new code for the 2 functions is now:
 
+.. code:: erlang
+
+    is_palindrome(Server, Text) ->
+        Server ! {self(), check, Text},
+        receive
+            {Server, {is_a_palindrome, _}}  -> true;
+            {Server, {not_a_palindrome, _}} -> false;
+            _Other                          -> {error, _Other}
+        after 1000 -> {timeout, Text}     %% <- new!
+        end.
+
+    check_palindrome(Server, Text) ->
+        Server ! {self(), check, Text},
+        receive
+            {Server, {is_a_palindrome,  Report}} -> {ok, Report};
+            {Server, {not_a_palindrome, Report}} -> {false, Report};
+            _Other                               -> {error, _Other}
+        after 1000 -> {timeout, Text}     %% <- new!
+        end.
+
+I would have liked to specify a timeout as a constant somewhere, used in both
+functions instead of being hard coded, but that'll be for later.  At least
+now, calling these functions when the server is stopped will no longer hang
+the caller.
+
+Here's a session using this new code:
+
+.. code:: erlang
+
+    Erlang/OTP 22 [erts-10.7.2] [source] [64-bit] [smp:8:8] [ds:8:8:10] [async-threads:1] [hipe] [dtrace]
+
+    Eshell V10.7.2  (abort with ^G)
+    1> Server = palindc:start().
+    Server = palindc:start().
+    <0.81.0>
+    2> palindc:is_palindrome(Server, "abba").
+    palindc:is_palindrome(Server, "abba").
+    true
+    3> palindc:check_palindrome(Server, "abba").
+    palindc:check_palindrome(Server, "abba").
+    {ok,"\"abba\" is a palindrome"}
+    4> palindc:check_palindrome(Server, "abbacus").
+    palindc:check_palindrome(Server, "abbacus").
+    {false,"\"abbacus\" is not a palindrome."}
+    5> palindc:stop(Server).
+    palindc:stop(Server).
+    Palindrome checker server stopped.
+    stop
+    6> palindc:check_palindrome(Server, "abbacus").
+    palindc:check_palindrome(Server, "abbacus").
+    {timeout,"abbacus"}
+    7> palindc:is_palindrome(Server, "abba").
+    palindc:is_palindrome(Server, "abba").
+    {timeout,"abba"}
+    8>
+
+The calls at 6 and 7 are done while the server is stopped, so the returned
+value indicates a timeout.
+
+Now lets see what happens if I send an invalid message, not handled by the
+code:
+
+.. code:: erlang
+
+    9> f(Server).
+    f(Server).
+    ok
+    10> Server = palindc:start().
+    Server = palindc:start().
+    <0.92.0>
+    11> palindc:is_palindrome(Server, 1.0).
+    palindc:is_palindrome(Server, 1.0).
+    =ERROR REPORT==== 24-Jun-2020::12:02:10.566701 ===
+    Error in process <0.92.0> with exit value:
+    {function_clause,[{lists,'-filter/2-lc$^0/1-0-',
+                             [1.0],
+                             [{file,"lists.erl"},{line,1286}]},
+                      {palinds,palindrome_check,1,
+                               [{file,"/Users/roup/doc/trying-erlang/exercises/e1/palinds.erl"},
+                                {line,34}]},
+                      {palinds,loop,0,
+                               [{file,"/Users/roup/doc/trying-erlang/exercises/e1/palinds.erl"},
+                                {line,20}]}]}
+
+    {timeout,1.0}
+    12> palindc:is_palindrome(Server, "abba").
+    palindc:is_palindrome(Server, "abba").
+    {timeout,"abba"}
+    13>
+
+First I forget Server to be able to re-bind it.
+Then I send it a float instead of a string.  That generates a dump trace: the
+server crashed!  Then, without re-starting the server, I issue another
+request, and then it times out, as expected.  Good.
+
+Now the server, or the client, should reject invalid data.  That's for later.
 
 
 Looking Back

@@ -22,6 +22,7 @@ is_palindrome(Server, Text) ->
         {Server, {is_a_palindrome, _}}  -> true;
         {Server, {not_a_palindrome, _}} -> false;
         _Other                          -> {error, _Other}
+    after 1000 -> {timeout, Text}
     end.
 
 check_palindrome(Server, Text) ->
@@ -30,7 +31,7 @@ check_palindrome(Server, Text) ->
         {Server, {is_a_palindrome,  Report}} -> {ok, Report};
         {Server, {not_a_palindrome, Report}} -> {false, Report};
         _Other                               -> {error, _Other}
-
+    after 1000 -> {timeout, Text}
     end.
 
 %% -----------------------------------------------------------------------------
