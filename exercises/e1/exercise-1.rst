@@ -5,7 +5,13 @@ Exercise 1 - Palindrome Checking Server
 
 This contains work and notes related to the `first exercise`_.
 
-I have written the following 2 files.
+I have written the following 2 sets of files, explained in the first and
+second section.
+
+.. contents::  **Table Of Contents**
+.. sectnum::
+
+
 
 Simple Basic Single-Client Server
 =================================
