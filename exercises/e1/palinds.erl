@@ -8,17 +8,20 @@
 -module(palinds).
 -export([loop/0]).
 
+%% Types
+-type(text() :: [char()]).
+
 %% - Server process loop.
 
+-spec loop() -> {'ok','stopped'}.
 loop() ->
     receive
-        stop ->
-            io:format("Palindrome checker server stopped.~n");
         {From, stop} ->
+            io:format("Palindrome checker server stopped.~n"),
             From ! {ok, stopped};
         {From, check, Text} ->
             case palindrome_check(Text) of
-                true  -> From ! {self(), {is_a_palindrome, quoted(Text) ++ " is a palindrome"}};
+                true  -> From ! {self(), {is_a_palindrome,  quoted(Text) ++ " is a palindrome"}};
                 false -> From ! {self(), {not_a_palindrome, quoted(Text) ++ " is not a palindrome."}}
             end,
             loop();
@@ -28,12 +31,16 @@ loop() ->
 
 %% -- Base logic
 
+-spec quoted(text()) -> text().
 quoted(Text) -> "\"" ++ Text ++ "\"".
 
+
+-spec palindrome_check(text()) -> boolean().
 palindrome_check(String) ->
     Normalised = to_small(rem_punct(String)),
     lists:reverse(Normalised) == Normalised.
 
+-spec to_small([any()]) -> text().
 to_small(String) -> lists:map(fun(Ch) ->
                                       case ($A =< Ch andalso Ch =< $Z) of
                                           true -> Ch+32;
@@ -42,6 +49,7 @@ to_small(String) -> lists:map(fun(Ch) ->
                               end,
                               String).
 
+-spec rem_punct(text()) -> text().
 rem_punct(String) -> lists:filter(fun (Ch) ->
                                           not(lists:member(Ch,"\"\'\t\n "))
                                   end,

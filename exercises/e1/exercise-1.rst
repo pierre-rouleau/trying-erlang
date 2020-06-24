@@ -32,31 +32,23 @@ Here's a log of the compilation, spawning, using and stopping the server:
 
     Eshell V10.7.2  (abort with ^G)
     1> c("/Users/roup/doc/trying-erlang/exercises/e1/palind", [{outdir, "/Users/roup/doc/trying-erlang/exercises/e1/"}]).
-    c("/Users/roup/doc/trying-erlang/exercises/e1/palind", [{outdir, "/Users/roup/doc/trying-erlang/exercises/e1/"}]).
     {ok,palind}
     2> ShellPid = self().
-    ShellPid = self().
     <0.79.0>
     3> Server = spawn(palind, server, [ShellPid]).
-    Server = spawn(palind, server, [ShellPid]).
     <0.87.0>
     4> Server ! {check, "Madam I\'m Adam"}.
-    Server ! {check, "Madam I\'m Adam"}.
     {check,"Madam I'm Adam"}
     5> Server ! {check, "abc"}.
-    Server ! {check, "abc"}.
     {check,"abc"}
     6> flush().
-    flush().
     Shell got {result,"\"Madam I'm Adam\" is a palindrome"}
     Shell got {result,"\"abc\" is not a palindrome."}
     ok
     7> Server ! stop.
-    Server ! stop.
     Server stopped.
     stop
     8> flush().
-    flush().
     ok
     9>
 
@@ -69,49 +61,36 @@ the function, not inside the case statement.
 
     Eshell V10.7.2  (abort with ^G)
     1> c("/Users/roup/doc/trying-erlang/exercises/e1/palind", [{outdir, "/Users/roup/doc/trying-erlang/exercises/e1/"}]).
-    c("/Users/roup/doc/trying-erlang/exercises/e1/palind", [{outdir, "/Users/roup/doc/trying-erlang/exercises/e1/"}]).
     {ok,palind}
     2> Self = self().
-    Self = self().
     <0.79.0>
     3> Server = spawn(palind, server, [Self]).
-    Server = spawn(palind, server, [Self]).
     <0.87.0>
     4> Server ! {check, "abc"}.
-    Server ! {check, "abc"}.
     {check,"abc"}
     5> Server ! {check, "def"}.
-    Server ! {check, "def"}.
     {check,"def"}
     6> Server ! {check, "Madam I\'m Adam"}.
-    Server ! {check, "Madam I\'m Adam"}.
     {check,"Madam I'm Adam"}
     7> Server ! {check, "Madam I\'m not Adam"}.
-    Server ! {check, "Madam I\'m not Adam"}.
     {check,"Madam I'm not Adam"}
     8> flush().
-    flush().
     Shell got {result,"\"abc\" is not a palindrome."}
     Shell got {result,"\"def\" is not a palindrome."}
     Shell got {result,"\"Madam I'm Adam\" is a palindrome"}
     Shell got {result,"\"Madam I'm not Adam\" is not a palindrome."}
     ok
     9> Server ! {check, "oh! ho!"}.
-    Server ! {check, "oh! ho!"}.
     {check,"oh! ho!"}
     10> Server ! {check, "oh! no!"}.
-    Server ! {check, "oh! no!"}.
     {check,"oh! no!"}
     11> flush().
-    flush().
     Shell got {result,"\"oh! ho!\" is not a palindrome."}
     Shell got {result,"\"oh! no!\" is not a palindrome."}
     ok
     12> Server ! {check, "Never odd or even"}.
-    Server ! {check, "Never odd or even"}.
     {check,"Never odd or even"}
     13> flush().
-    flush().
     Shell got {result,"\"Never odd or even\" is a palindrome"}
     ok
     14>
@@ -135,42 +114,31 @@ The session with the new instance is shown here:
 
     Eshell V10.7.2  (abort with ^G)
     1> c("/Users/roup/doc/trying-erlang/exercises/e1/palind", [{outdir, "/Users/roup/doc/trying-erlang/exercises/e1/"}]).
-    c("/Users/roup/doc/trying-erlang/exercises/e1/palind", [{outdir, "/Users/roup/doc/trying-erlang/exercises/e1/"}]).
     {ok,palind}
     2> Server = spawn(palind, server, [self()]).
-    Server = spawn(palind, server, [self()]).
     <0.86.0>
     3> Server ! "invalidly formatted message".
-    Server ! "invalidly formatted message".
     "invalidly formatted message"
     4> Server ! {check, "ahha"}.
-    Server ! {check, "ahha"}.
     {check,"ahha"}
     5> Server ! {check, "never odd or even"}.
-    Server ! {check, "never odd or even"}.
     {check,"never odd or even"}
     6> Server ! {check, "Madam I\'m Adam"}.
-    Server ! {check, "Madam I\'m Adam"}.
     {check,"Madam I'm Adam"}
     7> Server ! {check, "abc"}.
-    Server ! {check, "abc"}.
     {check,"abc"}
     8> flush().
-    flush().
     Shell got {result,"\"ahha\" is a palindrome"}
     Shell got {result,"\"never odd or even\" is a palindrome"}
     Shell got {result,"\"Madam I'm Adam\" is a palindrome"}
     Shell got {result,"\"abc\" is not a palindrome."}
     ok
     9> Server ! stop.
-    Server ! stop.
     Server stopped.
     stop
     10> Server ! {check, "abc"}.
-    Server ! {check, "abc"}.
     {check,"abc"}
     11> flush().
-    flush().
     ok
     12>
 
@@ -225,44 +193,31 @@ Here's a session using this code, with an Erlang shell running inside Emacs:
 
     Eshell V10.7.2  (abort with ^G)
     1> c("/Users/roup/doc/trying-erlang/exercises/e1/palindc", [{outdir, "/Users/roup/doc/trying-erlang/exercises/e1/"}]).
-    c("/Users/roup/doc/trying-erlang/exercises/e1/palindc", [{outdir, "/Users/roup/doc/trying-erlang/exercises/e1/"}]).
     {ok,palindc}
     2> c("/Users/roup/doc/trying-erlang/exercises/e1/palinds", [{outdir, "/Users/roup/doc/trying-erlang/exercises/e1/"}]).
-    c("/Users/roup/doc/trying-erlang/exercises/e1/palinds", [{outdir, "/Users/roup/doc/trying-erlang/exercises/e1/"}]).
     {ok,palinds}
     3> Server = palindc:start().
-    Server = palindc:start().
     <0.91.0>
     4> palindc:is_palindrome(Server, "never odd or even").
-    palindc:is_palindrome(Server, "never odd or even").
     true
     5> palindc:check_palindrome(Server, "never odd or even").
-    palindc:check_palindrome(Server, "never odd or even").
     {ok,"\"never odd or even\" is a palindrome"}
     6> palindc:check_palindrome(Server, "Madam, I'm Adam").
-    palindc:check_palindrome(Server, "Madam, I'm Adam").
     {false,"\"Madam, I'm Adam\" is not a palindrome."}
     7> palindc:check_palindrome(Server, "Madam I'm Adam").
-    palindc:check_palindrome(Server, "Madam I'm Adam").
     {ok,"\"Madam I'm Adam\" is a palindrome"}
     8> palindc:check_palindrome(Server, "Madam I\'m Adam").
-    palindc:check_palindrome(Server, "Madam I\'m Adam").
     {ok,"\"Madam I'm Adam\" is a palindrome"}
     9> palindc:check_palindrome(Server, "abc").
-    palindc:check_palindrome(Server, "abc").
     {false,"\"abc\" is not a palindrome."}
     10> palindc:is_palindrome(Server, "abc").
-    palindc:is_palindrome(Server, "abc").
     false
     11> palindc:stop().
-    palindc:stop().
     ** exception error: undefined function palindc:stop/0
     12> palindc:stop(Server).
-    palindc:stop(Server).
     Palindrome checker server stopped.
     stop
     13> palindc:is_palindrome(Server, "never odd or even").
-    palindc:is_palindrome(Server, "never odd or even").
       C-c C-c
     BREAK: (a)bort (A)bort with dump (c)ontinue (p)roc info (i)nfo
            (l)oaded (v)ersion (k)ill (D)b-tables (d)istribution
@@ -321,26 +276,19 @@ Here's a session using this new code:
 
     Eshell V10.7.2  (abort with ^G)
     1> Server = palindc:start().
-    Server = palindc:start().
     <0.81.0>
     2> palindc:is_palindrome(Server, "abba").
-    palindc:is_palindrome(Server, "abba").
     true
     3> palindc:check_palindrome(Server, "abba").
-    palindc:check_palindrome(Server, "abba").
     {ok,"\"abba\" is a palindrome"}
     4> palindc:check_palindrome(Server, "abbacus").
-    palindc:check_palindrome(Server, "abbacus").
     {false,"\"abbacus\" is not a palindrome."}
     5> palindc:stop(Server).
-    palindc:stop(Server).
     Palindrome checker server stopped.
     stop
     6> palindc:check_palindrome(Server, "abbacus").
-    palindc:check_palindrome(Server, "abbacus").
     {timeout,"abbacus"}
     7> palindc:is_palindrome(Server, "abba").
-    palindc:is_palindrome(Server, "abba").
     {timeout,"abba"}
     8>
 
@@ -353,13 +301,10 @@ code:
 .. code:: erlang
 
     9> f(Server).
-    f(Server).
     ok
     10> Server = palindc:start().
-    Server = palindc:start().
     <0.92.0>
     11> palindc:is_palindrome(Server, 1.0).
-    palindc:is_palindrome(Server, 1.0).
     =ERROR REPORT==== 24-Jun-2020::12:02:10.566701 ===
     Error in process <0.92.0> with exit value:
     {function_clause,[{lists,'-filter/2-lc$^0/1-0-',
@@ -374,7 +319,6 @@ code:
 
     {timeout,1.0}
     12> palindc:is_palindrome(Server, "abba").
-    palindc:is_palindrome(Server, "abba").
     {timeout,"abba"}
     13>
 
@@ -384,6 +328,121 @@ server crashed!  Then, without re-starting the server, I issue another
 request, and then it times out, as expected.  Good.
 
 Now the server, or the client, should reject invalid data.  That's for later.
+
+
+More Improvements - Guard against invalid Input and Types
+---------------------------------------------------------
+
+The previous version accepted any input.  It was possible to pass a float
+value instead of a string.  So I added a guard to check if the input is a
+list. I would have liked to use a BIF predicate that checks for a string,
+(something like `is_string`) but unfortunately Erlang does not support
+something like that.
+
+Then I added type specifications. For that, I first wanted to see if I could
+run TypEr to infer the types and get me the first list. I ran typer from a
+bash shell but that failed.
+
+So I read the section titled
+`Type Specifications and Erlang - PLTs Are The Best Sandwiches`_
+from Fred Hébert's `Learn You Some Erlang for Great Good`_.  This explains
+that you must first built Dialyzer's PLT (Persistent Lookup Table), so I did
+and then typer worked fine.
+
+
+.. _Learn You Some Erlang for Great Good: https://learnyousomeerlang.com
+.. _Type Specifications and Erlang - PLTs Are The Best Sandwiches: https://learnyousomeerlang.com/dialyzer#plt
+
+
+.. code:: shell
+
+    >Pierres-iMac@Wed Jun 24@16:21:03[~/doc/trying-erlang/exercises/e1]
+    > typer palinds.erl
+
+    %% File: "palinds.erl"
+    %% -------------------
+    -spec loop() -> {'ok','stopped'}.
+    -spec quoted(text()) -> text().
+    -spec palindrome_check(text()) -> boolean().
+    -spec to_small([any()]) -> text().
+    -spec rem_punct(text()) -> text().
+    >Pierres-iMac@Wed Jun 24@16:21:11[~/doc/trying-erlang/exercises/e1]
+    > typer palindc.erl
+
+    %% File: "palindc.erl"
+    %% -------------------
+    -spec start() -> pid().
+    -spec stop(pid()) -> 'ok'.
+    -spec is_palindrome(pid(),text()) -> boolean() | {'error',text()} | {'timeout',t
+    -spec check_palindrome(pid(),text()) -> {'error',_} | {'false',text()} | {'ok',t
+    {'timeout',text()}.
+    >Pierres-iMac@Wed Jun 24@16:22:49[~/doc/trying-erlang/exercises/e1]
+    >
+
+I added something similar but also provided a type called ``text()`` that is a
+list of ``char()``.
+
+So , for instance the code for the two client functions now has a type
+spec and a guard:
+
+.. code:: erlang
+
+    %% Types
+    -type(text() :: [char()]).
+
+    -spec is_palindrome(pid(), text()) ->
+              boolean() | {'error', text()} | {'timeout',text()}.
+
+    is_palindrome(Server, Text) when is_list(Text)  ->
+        Server ! {self(), check, Text},
+        receive
+            {Server, {is_a_palindrome, _}}  -> true;
+            {Server, {not_a_palindrome, _}} -> false;
+            _Other                          -> {error, _Other}
+        after 1000 -> {timeout, Text}
+        end.
+
+
+    -spec check_palindrome(pid(),text()) ->
+              {'error',_} | {'false',text()} | {'ok',text()} | {'timeout',text()}.
+
+    check_palindrome(Server, Text) when is_list(Text) ->
+        Server ! {self(), check, Text},
+        receive
+            {Server, {is_a_palindrome,  Report}} -> {ok, Report};
+            {Server, {not_a_palindrome, Report}} -> {false, Report};
+            _Other                               -> {error, _Other}
+        after 1000 -> {timeout, Text}
+        end.
+
+Trying to pass 1.0 to a function is intercepted right at the call, it does not
+percolate up to the server to make it crash.  I also sent text that includes
+non-ASCII characters:
+
+.. code:: erlang::
+
+    1> Server = palindc:start().
+    <0.81.0>
+    2> palindc:is_palindrome(1.0).
+    ** exception error: undefined function palindc:is_palindrome/1
+    3> palindc:is_palindrome(Server, 1.0).
+    palindc:is_palindrome(Server, 1.0).
+    ** exception error: no function clause matching palindc:is_palindrome(<0.81.0>,1.0) (/Users/roup/doc/trying-erlang/exercises/e1/palindc.erl, line 31)
+    4> palindc:is_palindrome(Server, "abc").
+    false
+    5> palindc:is_palindrome(Server, "abba").
+    true
+    6> palindc:is_palindrome(Server, "a∫∫a").
+    true
+    7> palindc:is_palindrome(Server, "a∫ ΩΩ ∫a").
+    true
+    8> palindc:check_palindrome(Server, "a∫ ΩΩ ∫a").
+    {ok,[34,97,8747,32,937,937,32,8747,97,34,32,105,115,32,97,
+         32,112,97,108,105,110,100,114,111,109,101]}
+    9> palindc:stop(Server).
+    ok
+    10>
+
 
 
 Looking Back

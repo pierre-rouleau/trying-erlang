@@ -8,15 +8,27 @@
 -module(palindc).
 -export([is_palindrome/2, check_palindrome/2, start/0, stop/1]).
 
+%% Types
+-type(text() :: [char()]).
+
 %% - External server controls.
 
+%% File: "palindc.erl"
+%% -------------------
+
+-spec start() -> pid().
 start() -> spawn(palinds, loop, []).
 
-stop(Server) -> Server ! stop.
+-spec stop(pid()) -> 'ok'.
+stop(Server) -> Server ! stop,
+                ok.
 
 %% - Palindrome verification functions
 
-is_palindrome(Server, Text) ->
+-spec is_palindrome(pid(), text()) ->
+          boolean() | {'error', text()} | {'timeout',text()}.
+
+is_palindrome(Server, Text) when is_list(Text)  ->
     Server ! {self(), check, Text},
     receive
         {Server, {is_a_palindrome, _}}  -> true;
@@ -25,6 +37,9 @@ is_palindrome(Server, Text) ->
     after 1000 -> {timeout, Text}
     end.
 
+
+-spec check_palindrome(pid(),text()) ->
+          {'error',_} | {'false',text()} | {'ok',text()} | {'timeout',text()}.
 check_palindrome(Server, Text) ->
     Server ! {self(), check, Text},
     receive
