@@ -443,6 +443,12 @@ non-ASCII characters:
     ok
     10>
 
+Another improvement: replacing text() with string()
+---------------------------------------------------
+
+The ``string()`` type is one of the built-in type specifiers.  So instead of
+having to define it as I had done with ``text()``, I now use ``string()``.
+
 
 
 Looking Back

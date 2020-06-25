@@ -8,9 +8,6 @@
 -module(palinds).
 -export([loop/0]).
 
-%% Types
--type(text() :: [char()]).
-
 %% - Server process loop.
 
 -spec loop() -> {'ok','stopped'}.
@@ -31,16 +28,16 @@ loop() ->
 
 %% -- Base logic
 
--spec quoted(text()) -> text().
+-spec quoted(string()) -> string().
 quoted(Text) -> "\"" ++ Text ++ "\"".
 
 
--spec palindrome_check(text()) -> boolean().
+-spec palindrome_check(string()) -> boolean().
 palindrome_check(String) ->
     Normalised = to_small(rem_punct(String)),
     lists:reverse(Normalised) == Normalised.
 
--spec to_small([any()]) -> text().
+-spec to_small([any()]) -> string().
 to_small(String) -> lists:map(fun(Ch) ->
                                       case ($A =< Ch andalso Ch =< $Z) of
                                           true -> Ch+32;
@@ -49,7 +46,7 @@ to_small(String) -> lists:map(fun(Ch) ->
                               end,
                               String).
 
--spec rem_punct(text()) -> text().
+-spec rem_punct(string()) -> string().
 rem_punct(String) -> lists:filter(fun (Ch) ->
                                           not(lists:member(Ch,"\"\'\t\n "))
                                   end,
