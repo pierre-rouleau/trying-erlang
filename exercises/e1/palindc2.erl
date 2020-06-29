@@ -17,7 +17,7 @@
 start() -> spawn(palinds2, loop, []).
 
 -spec stop(pid()) -> 'ok'.
-stop(Server) -> Server ! stop,
+stop(Server) -> Server ! {self(), stop},
                 ok.
 
 %% - Palindrome verification functions

@@ -631,7 +631,135 @@ The palindrome.erl_ module exports just one function: ``palindrome:check/1``.
 
 
 
+Trying the new code
+-------------------
 
+Using Emacs, I can easily compile the code within the editor by using the
+appropriate command.  It launches the Erlang shell if it is not already opened
+and invokes the Erlang shell compilation command with the full paths.
+
+I compile the 3 files from their respective buffers using the Emacs ``erlang-compile``
+command bound to the ``C-c C-k`` key sequence (Control-C followed by Control-K).
+
+After compiling each file in turn the Emacs Erlang shell shows:
+
+.. code:: erlang
+
+    Erlang/OTP 22 [erts-10.7.2] [source] [64-bit] [smp:8:8] [ds:8:8:10] [async-threads:1] [hipe] [dtrace]
+
+    Eshell V10.7.2  (abort with ^G)
+    1> c("/Users/roup/doc/trying-erlang/exercises/e1/palindrome", [{outdir, "/Users/roup/doc/trying-erlang/exercises/e1/"}]).
+    {ok,palindrome}
+    2> c("/Users/roup/doc/trying-erlang/exercises/e1/palinds2", [{outdir, "/Users/roup/doc/trying-erlang/exercises/e1/"}]).
+    {ok,palinds2}
+    3> c("/Users/roup/doc/trying-erlang/exercises/e1/palindc2", [{outdir, "/Users/roup/doc/trying-erlang/exercises/e1/"}]).
+    {ok,palindc2}
+    4>
+
+
+From there I can access the palindrome logic directly:
+
+.. code:: erlang
+
+    5> palindrome:check("abba").
+    true
+    6> palindrome:check("abcdef").
+    false
+    7>
+
+I can also use it via the client:
+
+.. code:: erlang
+
+    8> Server = palindc2:start().
+    <0.101.0>
+    9> palindc2:is_palindrome(Server, "abba").
+    true
+    10> palindc2:is_palindrome(Server, "abcdef").
+    false
+    11> palindc2:check_palindrome(Server, "abba").
+    {ok,"\"abba\" is a palindrome"}
+    12> palindc2:check_palindrome(Server, "abbba").
+    {ok,"\"abbba\" is a palindrome"}
+    13> palindc2:check_palindrome(Server, "abcdef").
+    {false,"\"abcdef\" is not a palindrome."}
+    14> palindc2:stop(Server).
+    ok
+
+Hum, The server did not seem to stop!
+
+I can try to issue another command:
+
+.. code:: erlang
+
+    15> palindc2:check_palindrome(Server, "abcdef").
+    {false,"\"abcdef\" is not a palindrome."}
+    16> palindc2:check_palindrome(Server, "aabbbbbaa").
+    {ok,"\"aabbbbbaa\" is a palindrome"}
+
+The server continues to serve requests.  Something must be wrong.
+I will send the request to stop it from the shell:
+
+.. code:: erlang
+
+
+    17> Server ! {self(), stop}.
+    Server ! {self(), stop}.
+    Palindrome checker server stopped.
+    {<0.96.0>,stop}
+    18> palindc2:check_palindrome(Server, "aabbbbbaa").
+    palindc2:check_palindrome(Server, "aabbbbbaa").
+    {error,{ok,stopped}}
+    19>
+
+That worked.
+
+Looking at the client code, the code for stopping the server is::
+
+.. code:: erlang
+
+    stop(Server) -> Server ! stop,
+                    ok.
+
+And it's not what the server expects!  It expects to receive a tuple with the
+PID of the client.  So it ignores and drops the stop message!
+
+The proper code should be:
+
+
+    stop(Server) -> Server ! {self(), stop},
+                    ok.
+
+
+Let's try again with the new code:
+
+.. code:: erlang
+
+    Erlang/OTP 22 [erts-10.7.2] [source] [64-bit] [smp:8:8] [ds:8:8:10] [async-threads:1] [hipe] [dtrace]
+
+    Eshell V10.7.2  (abort with ^G)
+    1> c("/Users/roup/doc/trying-erlang/exercises/e1/palindc2", [{outdir, "/Users/roup/doc/trying-erlang/exercises/e1/"}]).
+    c("/Users/roup/doc/trying-erlang/exercises/e1/palindc2", [{outdir, "/Users/roup/doc/trying-erlang/exercises/e1/"}]).
+    {ok,palindc2}
+    2> Server = palinc:start().
+    ** exception error: undefined function palinc:start/0
+    3> Server = palindc2:start().
+    <0.88.0>
+    4> palindc2:is_palindrome(Server, "abba").
+    true
+    5> palindc2:check_palindrome(Server, "abba").
+    {ok,"\"abba\" is a palindrome"}
+    6> palindc2:stop(Server).
+    Palindrome checker server stopped.
+    ok
+    7> palindc2:check_palindrome(Server, "abba").
+    {error,{ok,stopped}}
+    8>
+
+Ok, that works.  I only had to recompile the modified code, and then, when
+typing properly I'm able to issue commands and stop the server. If I try to
+issue a command while the server is stopped I receive an error identifying
+that the server is stooped.
 
 ..
    -----------------------------------------------------------------------------
