@@ -419,7 +419,7 @@ Trying to pass 1.0 to a function is intercepted right at the call, it does not
 percolate up to the server to make it crash.  I also sent text that includes
 non-ASCII characters:
 
-.. code:: erlang::
+.. code:: erlang
 
     1> Server = palindc:start().
     <0.81.0>
@@ -485,6 +485,152 @@ Erlang later in my readings and in this course.
 .. _palindc.erl: palindc.erl
 .. _palinds:
 .. _palinds.erl: palinds.erl
+
+
+..
+   -----------------------------------------------------------------------------
+
+Isolating logic inside its own module
+=====================================
+
+Since the logic to identify a palindrome might be useful elsewhere, and also
+to isolate it from the client and server interaction, I decided to write a
+module that will hold the palindrome logic which will then be used by the
+client or the server modules.
+
+Instead of updating the original code files, as I did previously, I created 3
+new files, leaving the original files intact.  The new files are:
+
+- palindc2.elr_.  The client.
+- palinds2.elr_.  The server.
+- palindrome.erl_.  The palindrome control logic used by the server.
+
+The client, palindc2.erl, does not change: it's the same code as in palindc
+except that it spawns the loop in palinds2 instead of palinds.
+
+Note that the server name changed just because I wanted to keep the
+original code and also because I stored all files in the same directory.
+The name of the client also changed simply because of the server name change.
+
+Here's the new client code, same as before except for the second line where
+the module of the server is identified:
+
+.. code:: erlang
+
+    -spec start() -> pid().
+    start() -> spawn(palinds2, loop, []).
+
+    -spec stop(pid()) -> 'ok'.
+    stop(Server) -> Server ! stop,
+                    ok.
+
+    %% - Palindrome verification functions
+
+    -spec is_palindrome(pid(), string()) ->
+              boolean() | {'error', string()} | {'timeout',string()}.
+
+    is_palindrome(Server, Text) when is_list(Text)  ->
+        Server ! {self(), check, Text},
+        receive
+            {Server, {is_a_palindrome, _}}  -> true;
+            {Server, {not_a_palindrome, _}} -> false;
+            _Other                          -> {error, _Other}
+        after 1000 -> {timeout, Text}
+        end.
+
+
+    -spec check_palindrome(pid(),string()) ->
+              {'error',_} | {'false',string()} | {'ok',string()} | {'timeout',string()}.
+    check_palindrome(Server, Text) ->
+        Server ! {self(), check, Text},
+        receive
+            {Server, {is_a_palindrome,  Report}} -> {ok, Report};
+            {Server, {not_a_palindrome, Report}} -> {false, Report};
+            _Other                               -> {error, _Other}
+        after 1000 -> {timeout, Text}
+        end.
+
+
+The server, palinds2.elr_, uses the logic provided by the palindrome.erl_
+file. So, compared to the previous set of code the only change, aside for
+modifying the module name, is the removal
+of the palindrome logic code, moved into its own file.
+Now the server module only provides the server loop and includes the utility
+quoted/1 function.
+
+
+.. code:: erlang
+
+
+    -module(palinds2).
+    -export([loop/0]).
+
+    %% - Server process loop.
+
+    -spec loop() -> {'ok','stopped'}.
+    loop() ->
+        receive
+            {From, stop} ->
+                io:format("Palindrome checker server stopped.~n"),
+                From ! {ok, stopped};
+            {From, check, Text} ->
+                case palindrome:check(Text) of
+                    true  -> From ! {self(), {is_a_palindrome,  quoted(Text) ++ " is a palindrome"}};
+                    false -> From ! {self(), {not_a_palindrome, quoted(Text) ++ " is not a palindrome."}}
+                end,
+                loop();
+            _Other  -> loop()
+        end.
+
+
+    -spec quoted(string()) -> string().
+    quoted(Text) -> "\"" ++ Text ++ "\"".
+
+
+
+The palindrome.erl_ module exports just one function: ``palindrome:check/1``.
+
+.. code:: erlang
+
+    -module(palindrome).
+    -export([check/1]).
+
+
+    %% --
+
+    -spec check(string()) -> boolean().
+    check(String) ->
+        Normalised = to_small(rem_punct(String)),
+        lists:reverse(Normalised) == Normalised.
+
+    %% -- Base logic
+
+    -spec to_small([any()]) -> string().
+    to_small(String) -> lists:map(fun(Ch) ->
+                                          case ($A =< Ch andalso Ch =< $Z) of
+                                              true -> Ch+32;
+                                              false -> Ch
+                                          end
+                                  end,
+                                  String).
+
+    -spec rem_punct(string()) -> string().
+    rem_punct(String) -> lists:filter(fun (Ch) ->
+                                              not(lists:member(Ch,"\"\'\t\n "))
+                                      end,
+                                      String).
+
+
+
+.. ref
+
+
+.. _palindrome.erl: palindrome.elr
+.. _palinds2.elr:   palinds2.elr
+.. _palindc2.elr:   palindc2.elr
+
+
+
 
 
 ..
