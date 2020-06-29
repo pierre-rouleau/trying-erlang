@@ -772,7 +772,7 @@ Looking Back
 
 Again, here, a mismatch in the protocol between a client and a server was the
 cause of the error.  An error easily missed, since we just leave the server
-running and unless we check that the server has sopped properly we'd never notice.
+running and unless we check that the server has stopped properly we'd never notice.
 
 
 ..
