@@ -714,18 +714,23 @@ I will send the request to stop it from the shell:
 
 That worked.
 
-Looking at the client code, the code for stopping the server is::
+Fixing the code that stops the server
+-------------------------------------
+
+
+Looking at the client code, the code for stopping the server is:
 
 .. code:: erlang
 
     stop(Server) -> Server ! stop,
                     ok.
 
-And it's not what the server expects!  It expects to receive a tuple with the
+And that's not what the server expects!  It expects to receive a tuple with the
 PID of the client.  So it ignores and drops the stop message!
 
 The proper code should be:
 
+.. code:: erlang
 
     stop(Server) -> Server ! {self(), stop},
                     ok.
@@ -760,6 +765,15 @@ Ok, that works.  I only had to recompile the modified code, and then, when
 typing properly I'm able to issue commands and stop the server. If I try to
 issue a command while the server is stopped I receive an error identifying
 that the server is stooped.
+
+
+Looking Back
+------------
+
+Again, here, a mismatch in the protocol between a client and a server was the
+cause of the error.  An error easily missed, since we just leave the server
+running and unless we check that the server has sopped properly we'd never notice.
+
 
 ..
    -----------------------------------------------------------------------------
