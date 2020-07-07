@@ -3,7 +3,7 @@ Exercice 3 - A Frequency Server
 ===============================
 
 :Home page: https://github.com/pierre-rouleau/trying-erlang
-:Time-stamp: <2020-07-07 16:40:42, updated by Pierre Rouleau>
+:Time-stamp: <2020-07-07 16:48:44, updated by Pierre Rouleau>
 
 This page describes work related to the `exercise 3`_, the first exercise of the
 second week of the course `Concurrent Programming in Erlang`_.
@@ -15,7 +15,6 @@ second week of the course `Concurrent Programming in Erlang`_.
 
 .. contents::  **Table Of Contents**
 .. sectnum::
-
 
 
 ..
@@ -97,7 +96,7 @@ transactions from the embedded PlantUML_ markup.
 
 Here's the image:
 
-.. image:: res/frequencies.png
+.. image:: v1/res/frequencies-v1.png
 
 The code follows:
 
