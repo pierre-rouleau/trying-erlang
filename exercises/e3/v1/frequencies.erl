@@ -2,15 +2,14 @@
 %%%  Exercise  : https://www.futurelearn.com/courses/concurrent-programming-erlang/3/steps/488342
 %%%  - Version 1 (slides version): explicit send & receive, limited error handling.
 %%%
-%%% Last Modified Time-stamp: <2020-07-07 15:25:13, updated by Pierre Rouleau>
+%%% Last Modified Time-stamp: <2020-07-07 17:15:37, updated by Pierre Rouleau>
+%% -----------------------------------------------------------------------------
 
 %% This file implements a naive frequency server where the client requests
 %% allocation and de-allocation of frequencies.
 %%
-%% Here's the representation of the exchanges supported:
 %%
 %%
-
 %%
 %% The server functional state is:
 %% - a pair of lists {Free, Allocated}
@@ -21,6 +20,9 @@
 %%
 %% Supported Interaction
 %% =====================
+%%
+%% Here's the representation of the exchanges supported:
+%%
 %% @startuml
 %%
 %% actor Client
