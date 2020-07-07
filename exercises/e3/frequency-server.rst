@@ -3,7 +3,7 @@ Exercice 3 - A Frequency Server
 ===============================
 
 :Home page: https://github.com/pierre-rouleau/trying-erlang
-:Time-stamp: <2020-07-07 16:54:08, updated by Pierre Rouleau>
+:Time-stamp: <2020-07-07 16:58:11, updated by Pierre Rouleau>
 
 This page describes work related to the `exercise 3`_, the first exercise of the
 second week of the course `Concurrent Programming in Erlang`_.
@@ -82,7 +82,7 @@ really begins.
 The Erlang Code - e3/v1/frequencies.erl
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-:Code file: e3/v1/frequencies.erl_
+:Code file: `e3/v1/frequencies.erl`_
 
 The following code corresponds to what is presented in the slides with a file
 banner, a PlantUML_ markup describing the transactions.  I added an extra
