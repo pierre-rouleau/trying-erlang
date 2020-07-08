@@ -3,7 +3,7 @@ Exercice 3 - A Frequency Server
 ===============================
 
 :Home page: https://github.com/pierre-rouleau/trying-erlang
-:Time-stamp: <2020-07-08 13:12:33, updated by Pierre Rouleau>
+:Time-stamp: <2020-07-08 14:14:37, updated by Pierre Rouleau>
 
 This page describes work related to the `exercise 3`_, the first exercise of the
 second week of the course `Concurrent Programming in Erlang`_.
@@ -753,6 +753,18 @@ Looking Back
 
 The changes were simple to add the functionality.  The code still presents
 it's interface to the world and it's still not easy to have multiple clients.
+
+One interesting point.  The value returned by the function ``is_owner`` may be
+one of:
+
+- false
+- {true, Freq}
+
+The *type* of the returned value of ``is_owner`` is not always the same. This
+works because the caller uses pattern match.  I'm not sure if this is a good
+way of doing it, but that does describe the logic quite well.  It's a little
+unusual to see something like that but quite useful. That also presents some
+challenge in a usual type checking system.
 
 *An aside*:
 
