@@ -1,9 +1,9 @@
 ===============================
-Exercice 3 - A Frequency Server
+Exercise 3 - A Frequency Server
 ===============================
 
 :Home page: https://github.com/pierre-rouleau/trying-erlang
-:Time-stamp: <2020-07-08 15:50:35, updated by Pierre Rouleau>
+:Time-stamp: <2020-07-08 16:47:51, updated by Pierre Rouleau>
 
 This page describes work related to the `exercise 3`_, the first exercise of the
 second week of the course `Concurrent Programming in Erlang`_.
