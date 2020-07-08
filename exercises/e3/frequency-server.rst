@@ -3,7 +3,7 @@ Exercice 3 - A Frequency Server
 ===============================
 
 :Home page: https://github.com/pierre-rouleau/trying-erlang
-:Time-stamp: <2020-07-08 12:29:28, updated by Pierre Rouleau>
+:Time-stamp: <2020-07-08 12:32:33, updated by Pierre Rouleau>
 
 This page describes work related to the `exercise 3`_, the first exercise of the
 second week of the course `Concurrent Programming in Erlang`_.
@@ -661,8 +661,7 @@ Here's the code:
     get_frequencies() ->
         [10,11,12,13,14,15].
 
-    %%
-    -----------------------------------------------------------------------------
+    %% -----------------------------------------------------------------------------
 
 
 Erlang Session with the improved frequency server
