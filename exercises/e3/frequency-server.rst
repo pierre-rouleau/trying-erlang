@@ -3,7 +3,7 @@ Exercice 3 - A Frequency Server
 ===============================
 
 :Home page: https://github.com/pierre-rouleau/trying-erlang
-:Time-stamp: <2020-07-08 15:34:44, updated by Pierre Rouleau>
+:Time-stamp: <2020-07-08 15:36:42, updated by Pierre Rouleau>
 
 This page describes work related to the `exercise 3`_, the first exercise of the
 second week of the course `Concurrent Programming in Erlang`_.
@@ -1050,7 +1050,7 @@ Erlang Session with the named server
     21> F ! {request, S, dump}.
     {request,<0.79.0>,dump}
     22> flush().
-    Shell got {reply,{error,client_does_not_own,7}}
+    Shell got {reply,{error,cliUent_does_not_own,7}}
     Shell got {reply,{[11,12,13,14,15],[{10,<0.79.0>}]}}
     ok
     23> F ! {request, S, stop}.
