@@ -1,0 +1,60 @@
+java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 160
+	at net.sourceforge.plantuml.asciiart.BasicCharAreaImpl.drawHLine(BasicCharAreaImpl.java:173)
+	at net.sourceforge.plantuml.asciiart.TranslatedCharArea.drawHLine(TranslatedCharArea.java:84)
+	at net.sourceforge.plantuml.asciiart.ComponentTextDivider.drawU(ComponentTextDivider.java:76)
+	at net.sourceforge.plantuml.sequencediagram.graphic.GraphicalDivider.drawInternalU(GraphicalDivider.java:62)
+	at net.sourceforge.plantuml.sequencediagram.graphic.GraphicalElement.drawU(GraphicalElement.java:60)
+	at net.sourceforge.plantuml.sequencediagram.graphic.DrawableSet.drawPlaygroundU(DrawableSet.java:367)
+	at net.sourceforge.plantuml.sequencediagram.graphic.DrawableSet.drawU22(DrawableSet.java:282)
+	at net.sourceforge.plantuml.sequencediagram.graphic.SequenceDiagramTxtMaker.<init>(SequenceDiagramTxtMaker.java:118)
+	at net.sourceforge.plantuml.sequencediagram.SequenceDiagram.getSequenceDiagramPngMaker(SequenceDiagram.java:234)
+	at net.sourceforge.plantuml.sequencediagram.SequenceDiagram.exportDiagramInternal(SequenceDiagram.java:251)
+	at net.sourceforge.plantuml.UmlDiagram.exportDiagramNow(UmlDiagram.java:204)
+	at net.sourceforge.plantuml.AbstractPSystem.exportDiagram(AbstractPSystem.java:140)
+	at net.sourceforge.plantuml.SourceStringReader.outputImage(SourceStringReader.java:156)
+	at net.sourceforge.plantuml.Pipe.managePipe(Pipe.java:113)
+	at net.sourceforge.plantuml.Run.managePipe(Run.java:367)
+	at net.sourceforge.plantuml.Run.main(Run.java:170)
+java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 160
+	at net.sourceforge.plantuml.asciiart.BasicCharAreaImpl.drawHLine(BasicCharAreaImpl.java:173)
+	at net.sourceforge.plantuml.asciiart.TranslatedCharArea.drawHLine(TranslatedCharArea.java:84)
+	at net.sourceforge.plantuml.asciiart.ComponentTextDivider.drawU(ComponentTextDivider.java:76)
+	at net.sourceforge.plantuml.sequencediagram.graphic.GraphicalDivider.drawInternalU(GraphicalDivider.java:62)
+	at net.sourceforge.plantuml.sequencediagram.graphic.GraphicalElement.drawU(GraphicalElement.java:60)
+	at net.sourceforge.plantuml.sequencediagram.graphic.DrawableSet.drawPlaygroundU(DrawableSet.java:367)
+	at net.sourceforge.plantuml.sequencediagram.graphic.DrawableSet.drawU22(DrawableSet.java:282)
+	at net.sourceforge.plantuml.sequencediagram.graphic.SequenceDiagramTxtMaker.<init>(SequenceDiagramTxtMaker.java:118)
+	at net.sourceforge.plantuml.sequencediagram.SequenceDiagram.getSequenceDiagramPngMaker(SequenceDiagram.java:234)
+	at net.sourceforge.plantuml.sequencediagram.SequenceDiagram.exportDiagramInternal(SequenceDiagram.java:251)
+	at net.sourceforge.plantuml.UmlDiagram.exportDiagramNow(UmlDiagram.java:204)
+	at net.sourceforge.plantuml.AbstractPSystem.exportDiagram(AbstractPSystem.java:140)
+	at net.sourceforge.plantuml.SourceStringReader.outputImage(SourceStringReader.java:156)
+	at net.sourceforge.plantuml.Pipe.managePipe(Pipe.java:113)
+	at net.sourceforge.plantuml.Run.managePipe(Run.java:367)
+	at net.sourceforge.plantuml.Run.main(Run.java:170)
+
+
+An error has occured : java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 160
+I know a UDP joke, but you might not get it
+
+Diagram size: 49 lines / 1195 characters.
+
+PlantUML (1.2020.15) cannot parse result from dot/GraphViz.
+
+Please go to https://plantuml.com/graphviz-dot to check your GraphViz version.
+
+Java Runtime: Java(TM) SE Runtime Environment
+JVM: Java HotSpot(TM) 64-Bit Server VM
+Default Encoding: UTF-8
+Language: en
+Country: CA
+
+PLANTUML_LIMIT_SIZE: 4096
+
+This may be caused by :
+ - a bug in PlantUML
+ - a problem in GraphViz
+
+You should send this diagram and this image to plantuml@gmail.com or
+post to https://plantuml.com/qa to solve this issue.
+You can try to turn arround this issue by simplifing your diagram.

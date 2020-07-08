@@ -3,7 +3,7 @@ Exercice 3 - A Frequency Server
 ===============================
 
 :Home page: https://github.com/pierre-rouleau/trying-erlang
-:Time-stamp: <2020-07-07 16:58:11, updated by Pierre Rouleau>
+:Time-stamp: <2020-07-08 12:29:28, updated by Pierre Rouleau>
 
 This page describes work related to the `exercise 3`_, the first exercise of the
 second week of the course `Concurrent Programming in Erlang`_.
@@ -435,6 +435,335 @@ The basic server is missing several features:
 
 I think that is what the exercise ask for.  That will be my frequency server
 version 2.
+
+
+..
+   -----------------------------------------------------------------------------
+
+Version 2 - Better Error Handling
+----------------------------------
+
+This second step adds protection against invalid requests, handling one of the
+requirements made by our customer (the exercise 3 in this case).
+
+- Prevents allocation of multiple frequencies by a client,
+- Prevents de-allocation of a frequency not allocated by the requester,
+- Prevents de-allocation of a currently free frequency (note that the previous
+  requirement handles this one).
+
+This implementation still spawns the process explicitly and is still not
+named, making it difficult to use multiple clients.
+
+..
+   -----------------------------------------------------------------------------
+
+:code file: `e3/v2/frequency.erl`_
+
+.. _e3/v2/frequency.erl: v2/frequency.erl
+
+The Erlang Code - e3/v2/frequency.erl
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The transaction model for this implementation is shown in the following
+sequence diagram:
+
+.. image:: v2/res/frequency-v1.png
+
+This new file differs by:
+
+- The file has a new name: frequency.erl - to conform to requirements.
+- It has a ``What's New`` section describinng the changes from the previous
+  version,
+- The supported transaction title and content changed to describe the new
+  protections,
+- Adds 2 more predicate functions: ``is_owner`` and ``owns`` that implement
+  the new verification.
+- ``allocate`` uses ``is_owner`` to check if the requesting client already
+  owns a frequency.  It uses a case statement to match the returned value which
+  contains the client's owned frequency in case of error.  The error returned
+  includes the frequency owned by the requesting client.
+- ``deallocate`` now takes a new argument: Pid of the requesting client, and
+  returns a data structure that has the same layout as allocate: it's able to
+  identify success or error as well as returning the new frequency database.
+  It uses the function ``owns`` to check if the request is valid and use a
+  case statement to match the returned value. When the client does not own the
+  frequency it tries to deallocate the error is labelled with the
+  ``client_does_not_own`` atom.
+
+Here's the code:
+
+.. code:: erlang
+
+    %%%  Concurrent Programming In Erlang -- The University of Kent / FutureLearn
+    %%%  Exercise  : https://www.futurelearn.com/courses/concurrent-programming-erlang/3/steps/488342
+    %%%  - Version 2 : Named (registered) server that is less permissive.  Renamed to frequency.erl.
+    %%%
+    %%% Last Modified Time-stamp: <2020-07-08 12:04:45, updated by Pierre Rouleau>
+    %% -----------------------------------------------------------------------------
+
+    %% What's New
+    %% ----------
+    %% A better server that builds on v1 and adds:
+    %%
+    %% - Prevents allocation of multiple frequencies by a client,
+    %% - Prevents de-allocation of a frequency not allocated by the requester,
+    %% - Prevents de-allocation of a currently free frequency (note that the previous
+    %%   requirement handles this one).
+    %%
+
+    %% Supported Transactions
+    %% ----------------------
+    %%
+    %% Here's the representation of the supported transactions:
+    %%
+    %% @startuml
+    %%
+    %% actor Client
+    %% database Frequency
+    %%
+    %% == Initialization: explicit spawn ==
+    %%
+    %% Client -> Frequency : spawn(frequencies, init, [])
+    %%
+    %%
+    %% == Operation: successful allocation ==
+    %%
+    %% Client -> Frequency : {request, Pid, allocate}
+    %% Client <-- Frequency : {reply, {ok, Freq}}
+    %%
+    %% == Operation: successful de-allocation ==
+    %%
+    %% Client -> Frequency : {request, Pid, {deallocate, Freq}}
+    %% Client <-- Frequency : {reply, ok}
+    %%
+    %%
+    %%
+    %% == Error: failed allocation (no available frequency) ==
+    %%
+    %% Client -> Frequency : {request, Pid, allocate}
+    %% Client <-- Frequency : {reply, {error, no_frequency}}
+    %%
+    %% == Error: failed allocation (client already owns one) ==
+    %%
+    %% Client -> Frequency : {request, Pid, allocate}
+    %% Client <-- Frequency : {reply, {error, client_already_owns, Freq}}
+    %%
+    %% == Error: failed de-allocation (frequency not allocated by client) ==
+    %%
+    %% Client -> Frequency : {request, Pid, {deallocate, Freq}}
+    %% Client <-- Frequency : {reply, {error, client_does_not_own, Freq}}
+    %%
+    %%
+    %% == Development help ==
+    %%
+    %% Client -> Frequency : {request, Pid, dump}
+    %% Client <-- Frequency : {reply, FreqDb}
+    %%
+    %% == Shutdown ==
+    %%
+    %% Client -> Frequency : {request, Pid, stop}
+    %% Client <- Frequency : {reply, stopped}
+    %%
+    %% @enduml
+
+    %% Server Functional State / Data Model
+    %% ------------------------------------
+    %% The server functional state is:
+    %% - a pair of lists {Free, Allocated}
+    %%   - Free := a list of frequency integers
+    %%   - Allocated: a list of {Freq, UserPid}
+    %%
+    %% Db access functions:
+    %% - allocate/2   : Allocate any frequency  for Client
+    %% - deallocate/3 : de-allocate client owned frequency
+    %%   - is_owner/2 : predicate: return {true, Freq} if Client owns a frequency,
+    %%                  False otherwise.
+    %%   - owns/3     : predicate: return true if Client owns a specific frequency.
+
+
+    -module(frequency).
+    -export([init/0, allocate/2, deallocate/3]).
+
+    %% Data Model:
+    %%    FreqDb := {free:[integer], allocated:[{integer, pid}]}
+
+    %% Usage: explicit spawn from client.
+
+    init() ->
+        FreqDb = {get_frequencies(), []},
+        loop(FreqDb).
+
+    loop(FreqDb) ->
+        receive
+            {request, Pid, allocate} ->
+                {NewFreqDb, Result} = allocate(FreqDb, Pid),
+                Pid ! {reply, Result},
+                loop(NewFreqDb);
+            {request, Pid, {deallocate, Freq}}  ->
+                {NewFreqDb, Result} = deallocate(FreqDb, Freq, Pid),
+                Pid! {reply, Result},
+                loop(NewFreqDb);
+            {request, Pid, dump} ->
+                Pid! {reply, FreqDb},
+                loop(FreqDb);
+            {request, Pid, stop} ->
+                Pid! {reply, stopped}
+        end.
+
+
+    %% Frequency 'Database' management functions.
+
+    %% allocate/2: FreqDb, ClientPid
+    %% allocate a frequency for ClientPid.  Allow 1 frequency per Client.
+    %% Return:  {FreqDb, Reply}
+    %%   1) when all frequencies are allocated (none free)
+    allocate({[], Allocated}, _Pid) ->
+        { {[], Allocated},
+          {error, no_frequency} };
+    %%   2) with some available frequency/ies
+    allocate({[Freq|Free], Allocated}, Pid) ->
+        case is_owner(Allocated, Pid) of
+            false ->    { {Free, [{Freq, Pid} | Allocated]},
+                          {ok, Freq} };
+            {true, OwnedFreq} -> { {[Freq|Free], Allocated},
+                                   {error, client_already_owns, OwnedFreq} }
+        end.
+
+    %% deallocate/3 : FreqDb, Freq, Pid
+    %% de-allocate client owned frequency
+    %% Return:  {FreqDb, Reply}
+    deallocate({Free, Allocated}, Freq, Pid) ->
+        case owns(Allocated, Freq, Pid) of
+            true ->     NewAllocated = lists:keydelete(Freq, 1, Allocated),
+                        { {[Freq|Free], NewAllocated},
+                          ok };
+            false ->    { {Free, Allocated},
+                          {error, client_does_not_own, Freq} }
+        end.
+
+    %%% Database verifications
+
+    %% is_owner/2 : Allocated, ClientPid
+    %% Return {true, Freq} when ClientPid already owns a frequency, false otherwise.
+    is_owner([], _ClientPid) -> false;
+    is_owner([{Freq, ClientPid} | _AllocatedTail], ClientPid) -> {true, Freq};
+    is_owner([_Head | Tail], ClientPid) -> is_owner(Tail, ClientPid).
+
+    %% owns/3 : Allocated, Freq, ClientPid
+    %% Return true when ClientPid owns Freq, false otherwise.
+    owns([], _Freq, _ClientPid) -> false;
+    owns([{Freq, ClientPid} | _AllocatedTail], Freq, ClientPid) -> true;
+    owns([_Head | Tail], Freq, ClientPid) -> owns(Tail, Freq, ClientPid).
+
+
+    %%% Database initialization
+
+    get_frequencies() ->
+        [10,11,12,13,14,15].
+
+    %%
+    -----------------------------------------------------------------------------
+
+
+Erlang Session with the improved frequency server
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The interactions with the server is similar to before.  The changes relate to
+not being able to allocate more than 1 frequency for the single client and not
+being able to de-allocate a frequency that was not previously allocated for
+the client.  Here again, I use shell's ``flush()`` to read the replies from
+the server and I request the frequency database dumps to see how the server
+handles the requests.
+
+.. code:: erlang
+
+    20> c("/Users/roup/doc/trying-erlang/exercises/e3/v2/frequency", [{outdir, "/Users/roup/doc/trying-erlang/exercises/e3/v2/"}]).
+    c("/Users/roup/doc/trying-erlang/exercises/e3/v2/frequency", [{outdir, "/Users/roup/doc/trying-erlang/exercises/e3/v2/"}]).
+    {ok,frequency}
+    21> f().
+    ok
+    22> Freqs = spawn(frequency, init, []).
+    <0.120.0>
+    23> Freqs ! {request, self(), allocate}.
+    {request,<0.79.0>,allocate}
+    24> Freqs ! {request, self(), dump}.
+    {request,<0.79.0>,dump}
+    25> flush().
+    Shell got {reply,{ok,10}}
+    Shell got {reply,{[11,12,13,14,15],[{10,<0.79.0>}]}}
+    ok
+    26> Freqs ! {request, self(), allocate}.
+    {request,<0.79.0>,allocate}
+    27> Freqs ! {request, self(), dump}.
+    {request,<0.79.0>,dump}
+    28> flush().
+    Shell got {reply,{error,client_already_owns,10}}
+    Shell got {reply,{[11,12,13,14,15],[{10,<0.79.0>}]}}
+    ok
+    29> Freqs ! {request, self(), allocate}.
+    {request,<0.79.0>,allocate}
+    30> Freqs ! {request, self(), dump}.
+    {request,<0.79.0>,dump}
+    31> flush().
+    Shell got {reply,{error,client_already_owns,10}}
+    Shell got {reply,{[11,12,13,14,15],[{10,<0.79.0>}]}}
+    ok
+    32> Freqs ! {request, self(), {deallocate, 11}}.
+    {request,<0.79.0>,{deallocate,11}}
+    33> Freqs ! {request, self(), dump}.
+    {request,<0.79.0>,dump}
+    34> flush().
+    Shell got {reply,{error,client_does_not_own,11}}
+    Shell got {reply,{[11,12,13,14,15],[{10,<0.79.0>}]}}
+    ok
+    35> Freqs ! {request, self(), {deallocate, 1}}.
+    {request,<0.79.0>,{deallocate,1}}
+    36> Freqs ! {request, self(), dump}.
+    {request,<0.79.0>,dump}
+    37> flush().
+    Shell got {reply,{error,client_does_not_own,1}}
+    Shell got {reply,{[11,12,13,14,15],[{10,<0.79.0>}]}}
+    ok
+    38> Freqs ! {request, self(), {deallocate, 10}}.
+    {request,<0.79.0>,{deallocate,10}}
+    39> Freqs ! {request, self(), dump}.
+    {request,<0.79.0>,dump}
+    40> flush().
+    Shell got {reply,ok}
+    Shell got {reply,{[10,11,12,13,14,15],[]}}
+    ok
+    41> Freqs ! {request, self(), {deallocate, 10}}.
+    {request,<0.79.0>,{deallocate,10}}
+    42> Freqs ! {request, self(), dump}.
+    {request,<0.79.0>,dump}
+    43> flush().
+    Shell got {reply,{error,client_does_not_own,10}}
+    Shell got {reply,{[10,11,12,13,14,15],[]}}
+    ok
+    44> Freqs ! {request, self(), stop}.
+    {request,<0.79.0>,stop}
+    45> flush().
+    Shell got {reply,stopped}
+    ok
+    46>
+
+
+
+Looking Back
+~~~~~~~~~~~~
+
+The changes were simple to add the functionality.  The code still presents
+it's interface to the world and it's still not easy to have multiple clients.
+
+*An aside*:
+
+   I discovered that PlantUML cannot render a text-based description of the
+   sequence diagram once the markup becomes too big.  There is a limit of 4K
+   somewhere. The bigger diagrams can still be created in graphics mode
+   though. So that's what I'll use.
+
+
+
 
 
 
