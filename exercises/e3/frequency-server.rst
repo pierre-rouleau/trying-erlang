@@ -3,7 +3,7 @@ Exercice 3 - A Frequency Server
 ===============================
 
 :Home page: https://github.com/pierre-rouleau/trying-erlang
-:Time-stamp: <2020-07-08 14:14:37, updated by Pierre Rouleau>
+:Time-stamp: <2020-07-08 15:34:44, updated by Pierre Rouleau>
 
 This page describes work related to the `exercise 3`_, the first exercise of the
 second week of the course `Concurrent Programming in Erlang`_.
@@ -439,7 +439,6 @@ version 2.
 
 ..
    -----------------------------------------------------------------------------
-
 Version 2 - Better Error Handling
 ----------------------------------
 
@@ -454,15 +453,13 @@ requirements made by our customer (the exercise 3 in this case).
 This implementation still spawns the process explicitly and is still not
 named, making it difficult to use multiple clients.
 
-..
-   -----------------------------------------------------------------------------
+
+The Erlang Code - e3/v2/frequency.erl
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :code file: `e3/v2/frequency.erl`_
 
 .. _e3/v2/frequency.erl: v2/frequency.erl
-
-The Erlang Code - e3/v2/frequency.erl
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The transaction model for this implementation is shown in the following
 sequence diagram:
@@ -776,6 +773,300 @@ challenge in a usual type checking system.
 
 
 
+
+
+
+..
+   -----------------------------------------------------------------------------
+
+Version 3 - More Encapsulation and a Named Server
+-------------------------------------------------
+
+In this last step, I'm adding code to register the server name, then moving
+on.  The changes are minimal without any modification to the transactions and
+still not much information hiding.
+
+
+The Erlang Code - e3/v3/frequency.erl
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:code file: `e3/v3/frequency.erl`_
+
+In this version I added the ``start/0`` function that spawns and registers the
+process.  It returns the registered name atom in a tuple if all works fine.
+
+I would have liked to remove init/0 from the *public* interface but did not succeed.
+One surprising aspect of the registration mechanism, is the fact that a
+function I'm trying to hide, init/0 needs to be part of the interface
+because the erlang:spawn/3 BIF.  The same was done in the section on registered
+processes in the book
+`Erlang Programming by Francesco Cesarini and Simon Thomson`_ .
+There is a spawn/1 BIF that takes the name of the fun, not a function. I tried
+passing it init/0 and that did not work.  So I went back to using spawn/3 and
+placed init/0 back in the export list.  I'll have to investigate to find if
+there is a better way.
+
+.. _e3/v3/frequency.erl: v3/frequency.erl
+.. _Erlang Programming by Francesco Cesarini and Simon Thomson: https://www.oreilly.com/library/view/erlang-programming/9780596803940/
+
+I did not generate a PlantUML drawing for this code.  It's the same as the
+previous one except for the very first one: there is now no explicit spawn.
+However, I'm not yet sure how to represent that at this point.
+
+.. code:: erlang
+
+    %%%  Concurrent Programming In Erlang -- The University of Kent / FutureLearn
+    %%%  Exercise  : https://www.futurelearn.com/courses/concurrent-programming-erlang/3/steps/488342
+    %%%  - Version 3 : Named process started with start/0,
+    %%%
+    %%% Last Modified Time-stamp: <2020-07-08 15:27:48, updated by Pierre Rouleau>
+    %% -----------------------------------------------------------------------------
+
+    %% What's New
+    %% ----------
+    %% - v3: Named (registered process). Hide spawning with a start/0 function.
+    %% - v2: A better server that builds on v1 and adds:
+    %%
+    %%   - Prevents allocation of multiple frequencies by a client,
+    %%   - Prevents de-allocation of a frequency not allocated by the requester,
+    %%   - Prevents de-allocation of a currently free frequency (note that the previous
+    %%    requirement handles this one).
+    %%
+
+    %% Supported Transactions
+    %% ----------------------
+    %%
+    %% Here's the representation of the supported transactions:
+    %%
+    %% @startuml
+    %%
+    %% actor Client
+    %% database Frequency
+    %%
+    %%
+    %% == Operation: successful allocation ==
+    %%
+    %% Client -> Frequency : {request, Pid, allocate}
+    %% Client <-- Frequency : {reply, {ok, Freq}}
+    %%
+    %% == Operation: successful de-allocation ==
+    %%
+    %% Client -> Frequency : {request, Pid, {deallocate, Freq}}
+    %% Client <-- Frequency : {reply, ok}
+    %%
+    %%
+    %%
+    %% == Error: failed allocation (no available frequency) ==
+    %%
+    %% Client -> Frequency : {request, Pid, allocate}
+    %% Client <-- Frequency : {reply, {error, no_frequency}}
+    %%
+    %% == Error: failed allocation (client already owns one) ==
+    %%
+    %% Client -> Frequency : {request, Pid, allocate}
+    %% Client <-- Frequency : {reply, {error, client_already_owns, Freq}}
+    %%
+    %% == Error: failed de-allocation (frequency not allocated by client) ==
+    %%
+    %% Client -> Frequency : {request, Pid, {deallocate, Freq}}
+    %% Client <-- Frequency : {reply, {error, client_does_not_own, Freq}}
+    %%
+    %%
+    %% == Development help ==
+    %%
+    %% Client -> Frequency : {request, Pid, dump}
+    %% Client <-- Frequency : {reply, FreqDb}
+    %%
+    %% == Shutdown ==
+    %%
+    %% Client -> Frequency : {request, Pid, stop}
+    %% Client <- Frequency : {reply, stopped}
+    %%
+    %% @enduml
+
+    %% Server Functional State / Data Model
+    %% ------------------------------------
+    %% The server functional state is:
+    %% - a pair of lists {Free, Allocated}
+    %%   - Free := a list of frequency integers
+    %%   - Allocated: a list of {Freq, UserPid}
+    %%
+    %% Db access functions:
+    %% - allocate/2   : Allocate any frequency  for Client
+    %% - deallocate/3 : de-allocate client owned frequency
+    %%   - is_owner/2 : predicate: return {true, Freq} if Client owns a frequency,
+    %%                  False otherwise.
+    %%   - owns/3     : predicate: return true if Client owns a specific frequency.
+
+
+    -module(frequency).
+    -export([start/0, init/0, allocate/2, deallocate/3]).
+
+    %% Data Model:
+    %%    FreqDb := {free:[integer], allocated:[{integer, pid}]}
+
+
+    %% start/0 : start the server
+    %%         : return - {ok, ServerName} on success
+    %%                  - {error, Error} on failure
+    start() ->
+        case register(frequency, spawn(frequency, init, [])) of
+            true ->  {ok, frequency};
+            Error -> {error, Error}
+        end.
+
+
+    init() ->
+        FreqDb = {get_frequencies(), []},
+        loop(FreqDb).
+
+    loop(FreqDb) ->
+        receive
+            {request, Pid, allocate} ->
+                {NewFreqDb, Result} = allocate(FreqDb, Pid),
+                Pid ! {reply, Result},
+                loop(NewFreqDb);
+            {request, Pid, {deallocate, Freq}}  ->
+                {NewFreqDb, Result} = deallocate(FreqDb, Freq, Pid),
+                Pid! {reply, Result},
+                loop(NewFreqDb);
+            {request, Pid, dump} ->
+                Pid! {reply, FreqDb},
+                loop(FreqDb);
+            {request, Pid, stop} ->
+                Pid! {reply, stopped}
+        end.
+
+
+    %% Frequency 'Database' management functions.
+
+    %% allocate/2: FreqDb, ClientPid
+    %% allocate a frequency for ClientPid.  Allow 1 frequency per Client.
+    %% Return:  {FreqDb, Reply}
+    %%   1) when all frequencies are allocated (none free)
+    allocate({[], Allocated}, _Pid) ->
+        { {[], Allocated},
+          {error, no_frequency} };
+    %%   2) with some available frequency/ies
+    allocate({[Freq|Free], Allocated}, Pid) ->
+        case is_owner(Allocated, Pid) of
+            false ->    { {Free, [{Freq, Pid} | Allocated]},
+                          {ok, Freq} };
+            {true, OwnedFreq} -> { {[Freq|Free], Allocated},
+                                   {error, client_already_owns, OwnedFreq} }
+        end.
+
+    %% deallocate/3 : FreqDb, Freq, Pid
+    %% de-allocate client owned frequency
+    %% Return:  {FreqDb, Reply}
+    deallocate({Free, Allocated}, Freq, Pid) ->
+        case owns(Allocated, Freq, Pid) of
+            true ->     NewAllocated = lists:keydelete(Freq, 1, Allocated),
+                        { {[Freq|Free], NewAllocated},
+                          ok };
+            false ->    { {Free, Allocated},
+                          {error, client_does_not_own, Freq} }
+        end.
+
+    %%% Database verifications
+
+    %% is_owner/2 : Allocated, ClientPid
+    %% Return {true, Freq} when ClientPid already owns a frequency, false otherwise.
+    is_owner([], _ClientPid) -> false;
+    is_owner([{Freq, ClientPid} | _AllocatedTail], ClientPid) -> {true, Freq};
+    is_owner([_Head | Tail], ClientPid) -> is_owner(Tail, ClientPid).
+
+    %% owns/3 : Allocated, Freq, ClientPid
+    %% Return true when ClientPid owns Freq, false otherwise.
+    owns([], _Freq, _ClientPid) -> false;
+    owns([{Freq, ClientPid} | _AllocatedTail], Freq, ClientPid) -> true;
+    owns([_Head | Tail], Freq, ClientPid) -> owns(Tail, Freq, ClientPid).
+
+
+    %%% Database initialization
+
+    get_frequencies() ->
+        [10,11,12,13,14,15].
+
+    %% -----------------------------------------------------------------------------
+
+
+
+Erlang Session with the named server
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code:: erlang
+
+    Erlang/OTP 22 [erts-10.7.2] [source] [64-bit] [smp:8:8] [ds:8:8:10] [async-threads:1] [hipe] [dtrace]
+
+    Eshell V10.7.2  (abort with ^G)
+    1> whereis(frequency).
+    undefined
+    2> self().
+    <0.79.0>
+    3> c(frequency).
+    {error,non_existing}
+    4> pwd().
+    /Users/roup/doc/trying-erlang/exercises/e3
+    ok
+    5> cd("v3").
+    /Users/roup/doc/trying-erlang/exercises/e3/v3
+    ok
+    6> c(frequency).
+    {ok,frequency}
+    7> whereis(frequency).
+    undefined
+    8> frequency:start().
+    {ok,frequency}
+    9> whereis(frequency).
+    <0.92.0>
+    10> frequency ! {request, self(), dump}.
+    {request,<0.79.0>,dump}
+    11> flush().
+    Shell got {reply,{[10,11,12,13,14,15],[]}}
+    ok
+    12> frequency ! {request, self(), allocate}.
+    {request,<0.79.0>,allocate}
+    13> frequency ! {request, self(), dump}.
+    {request,<0.79.0>,dump}
+    14> flush().
+    Shell got {reply,{ok,10}}
+    Shell got {reply,{[11,12,13,14,15],[{10,<0.79.0>}]}}
+    ok
+    15> frequency ! {request, self(), allocate}.
+    {request,<0.79.0>,allocate}
+    16> frequency ! {request, self(), dump}.
+    {request,<0.79.0>,dump}
+    17> flush().
+    Shell got {reply,{error,client_already_owns,10}}
+    Shell got {reply,{[11,12,13,14,15],[{10,<0.79.0>}]}}
+    ok
+    18> F = whereis(frequency).
+    <0.92.0>
+    19> S = self().
+    <0.79.0>
+    20> F ! {request, S, {deallocate, 7}}.
+    {request,<0.79.0>,{deallocate,7}}
+    21> F ! {request, S, dump}.
+    {request,<0.79.0>,dump}
+    22> flush().
+    Shell got {reply,{error,client_does_not_own,7}}
+    Shell got {reply,{[11,12,13,14,15],[{10,<0.79.0>}]}}
+    ok
+    23> F ! {request, S, stop}.
+    {request,<0.79.0>,stop}
+    24> flush().
+    Shell got {reply,stopped}
+    ok
+    25>
+
+
+Looking Back
+~~~~~~~~~~~~
+
+I'm still looking at a way to communicate with this server from different
+Erlang shell instances.  Also I would like to find a better way to encapsulate
+the protocol.
 
 
 
