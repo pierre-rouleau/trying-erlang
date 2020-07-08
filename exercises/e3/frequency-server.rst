@@ -3,7 +3,7 @@ Exercice 3 - A Frequency Server
 ===============================
 
 :Home page: https://github.com/pierre-rouleau/trying-erlang
-:Time-stamp: <2020-07-08 12:32:33, updated by Pierre Rouleau>
+:Time-stamp: <2020-07-08 13:12:33, updated by Pierre Rouleau>
 
 This page describes work related to the `exercise 3`_, the first exercise of the
 second week of the course `Concurrent Programming in Erlang`_.
@@ -496,9 +496,9 @@ Here's the code:
 
     %%%  Concurrent Programming In Erlang -- The University of Kent / FutureLearn
     %%%  Exercise  : https://www.futurelearn.com/courses/concurrent-programming-erlang/3/steps/488342
-    %%%  - Version 2 : Named (registered) server that is less permissive.  Renamed to frequency.erl.
+    %%%  - Version 2 : Less permissive frequency server.  Renamed to frequency.erl.
     %%%
-    %%% Last Modified Time-stamp: <2020-07-08 12:04:45, updated by Pierre Rouleau>
+    %%% Last Modified Time-stamp: <2020-07-08 13:12:20, updated by Pierre Rouleau>
     %% -----------------------------------------------------------------------------
 
     %% What's New

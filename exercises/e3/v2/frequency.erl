@@ -1,8 +1,8 @@
 %%%  Concurrent Programming In Erlang -- The University of Kent / FutureLearn
 %%%  Exercise  : https://www.futurelearn.com/courses/concurrent-programming-erlang/3/steps/488342
-%%%  - Version 2 : Named (registered) server that is less permissive.  Renamed to frequency.erl.
+%%%  - Version 2 : Less permissive frequency server.  Renamed to frequency.erl.
 %%%
-%%% Last Modified Time-stamp: <2020-07-08 12:04:45, updated by Pierre Rouleau>
+%%% Last Modified Time-stamp: <2020-07-08 13:12:20, updated by Pierre Rouleau>
 %% -----------------------------------------------------------------------------
 
 %% What's New
