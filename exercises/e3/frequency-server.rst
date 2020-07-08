@@ -3,7 +3,7 @@ Exercice 3 - A Frequency Server
 ===============================
 
 :Home page: https://github.com/pierre-rouleau/trying-erlang
-:Time-stamp: <2020-07-08 15:36:42, updated by Pierre Rouleau>
+:Time-stamp: <2020-07-08 15:50:35, updated by Pierre Rouleau>
 
 This page describes work related to the `exercise 3`_, the first exercise of the
 second week of the course `Concurrent Programming in Erlang`_.
@@ -1068,6 +1068,27 @@ I'm still looking at a way to communicate with this server from different
 Erlang shell instances.  Also I would like to find a better way to encapsulate
 the protocol.
 
+
+
+..
+   -----------------------------------------------------------------------------
+
+
+After looking at the Solution...
+--------------------------------
+
+The `proposed solution`_ is:
+
+- much less verbose, no overall comments, but that's OK, I'm trying to
+  document my code to separate things.
+- does not provide feedback to requester of invalid de-allocation,
+- does not use separate function: uses library ``list:keymember``. I wrote my
+  own lookup code.
+
+I do like trying to name the various concepts in code and separate the logic
+as much as I can.
+
+.. _proposed solution: https://ugc.futurelearn.com/uploads/files/9a/63/9a631ea5-1973-45e1-ad2b-ccc5b7a1a559/ModifyingFreqServer.pdf
 
 
 ..
