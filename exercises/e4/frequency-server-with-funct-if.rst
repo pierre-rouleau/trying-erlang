@@ -4,7 +4,7 @@
 ============================================================
 
 :Home page: https://github.com/pierre-rouleau/trying-erlang
-:Time-stamp: <2020-07-08 22:53:39, updated by Pierre Rouleau>
+:Time-stamp: <2020-07-08 23:10:09, updated by Pierre Rouleau>
 
 This page describes work related to the `exercise 4`_, the second exercise of the
 second week of the course `Concurrent Programming in Erlang`_.
@@ -378,7 +378,7 @@ large program can cause a deadlock like this.  I know that unit testing,
 Quickcheck and all sorts of techniques can help here, but people do make
 typing mistakes and it be nice to be able to perform static analysis to detect
 these things.
-I wonder if the ML-like BEAM languages are getting close from being
+I wonder if the ML-like BEAM languages (Alpaca_ and Gleam_) are getting close from being
 production ready.  That could help here.
 
 Another thing. It would be nice if it was possible to create a macro in the
@@ -405,5 +405,7 @@ source code.  That might have already been done.
 .. _Erlang shell man page: https://erlang.org/doc/man/shell.html
 .. _installed Erlang: https://github.com/pierre-rouleau/about-erlang#installing-erlang
 .. _installed the Erlang Man pages: https://github.com/pierre-rouleau/about-erlang#manual-installation-of-erlang-otp-documentation-and-man-files
+.. _Alpaca: https://github.com/alpaca-lang/alpaca
+.. _Gleam: https://github.com/gleam-lang/gleam
 
 -----------------------------------------------------------------------------
