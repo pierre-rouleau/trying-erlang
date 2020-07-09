@@ -4,7 +4,7 @@
 ============================================================
 
 :Home page: https://github.com/pierre-rouleau/trying-erlang
-:Time-stamp: <2020-07-08 22:48:31, updated by Pierre Rouleau>
+:Time-stamp: <2020-07-08 22:53:39, updated by Pierre Rouleau>
 
 This page describes work related to the `exercise 4`_, the second exercise of the
 second week of the course `Concurrent Programming in Erlang`_.
@@ -389,12 +389,16 @@ more time reading the complete `Erlang shell man page`_.
 
 *Emacs Related Note*
 
-When I `installed Erlang`_ I `installed the Erlang Man pages`_ accessible from
-the command line. I'm using them inside Emacs.  With Emacs I can quickly
+When I `installed Erlang`_ I also `installed the Erlang Man pages`_ and made
+them accessible from the command line, and therefore from Emacs.
+Because I'm using them inside Emacs.  With Emacs I can quickly
 search the man pages: Emacs command allows me to list the available man pages.
 One thing I might want to do is find a way to restrict the available man pages
 to only Erlang man pages.  This way when I list all available man pages I
-would only see the Erlang related ones.
+would only see the Erlang related ones.  That's one of the things I want to do
+with Emacs.  The other would be to implement quick access to local HTML
+documentation for a specific [Module][:Function[:Arity]] directly from the
+source code.  That might have already been done.
 
 
 
