@@ -4,7 +4,7 @@
 ============================================================
 
 :Home page: https://github.com/pierre-rouleau/trying-erlang
-:Time-stamp: <2020-07-08 22:40:01, updated by Pierre Rouleau>
+:Time-stamp: <2020-07-08 22:48:31, updated by Pierre Rouleau>
 
 This page describes work related to the `exercise 4`_, the second exercise of the
 second week of the course `Concurrent Programming in Erlang`_.
@@ -54,7 +54,22 @@ API are now meant to be called by the users' code.
 Sequence Diagram
 ~~~~~~~~~~~~~~~~
 
-The graphical representation of this is:
+The user now calls:
+
+- frequency:start()
+- frequency:allocate()
+- frequency: deallocate(Freq)
+- frequency:stop()
+
+and I added, for debugging,
+
+- frequency:dump().
+
+The transactions using a specific protocol is hidden from the user's code.
+
+
+The graphical representation of this is, where I represent the *API* as the
+boundary of the system which the user interacts with:
 
 .. image:: v1/res/fs-v1.png
 
@@ -301,7 +316,7 @@ It's now much easier to use the server.  Here's a session:
 
 .. code:: erlang
 
-Erlang/OTP 22 [erts-10.7.2] [source] [64-bit] [smp:8:8] [ds:8:8:10] [async-threads:1] [hipe] [dtrace]
+    Erlang/OTP 22 [erts-10.7.2] [source] [64-bit] [smp:8:8] [ds:8:8:10] [async-threads:1] [hipe] [dtrace]
 
     Eshell V10.7.2  (abort with ^G)
     1> c("/Users/roup/doc/trying-erlang/exercises/e4/v1/frequency", [{outdir, "/Users/roup/doc/trying-erlang/exercises/e4/v1/"}]).
