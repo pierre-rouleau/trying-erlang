@@ -29,6 +29,7 @@ The list of exercises follows:
 - [Exercise 1: Palindrome Checking Server](exercises/e1/exercise-1.rst)
 - [Exercise 2: Working with the mailbox](exercises/e2/exercise-2.rst)
 - [Exercise 3: Frequency Server](exercises/e3/frequency-server.rst)
+- [Exercise 4: Frequency Server with a Functional Interface](exercises/e4/frequency-server-with-funct-if.rst)
 
 
 
