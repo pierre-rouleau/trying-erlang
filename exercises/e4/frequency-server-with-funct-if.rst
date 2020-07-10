@@ -4,7 +4,7 @@
 ============================================================
 
 :Home page: https://github.com/pierre-rouleau/trying-erlang
-:Time-stamp: <2020-07-10 15:34:01, updated by Pierre Rouleau>
+:Time-stamp: <2020-07-10 15:36:17, updated by Pierre Rouleau>
 
 This page describes work related to the `exercise 4`_, the second exercise of the
 second week of the course `Concurrent Programming in Erlang`_.
@@ -1739,7 +1739,7 @@ are sometimes intermingled. It seems that Erlang treats a line output as a
 critical section because the content of lines themselves are not affected,
 just their order.
 
-.. code: erlang
+.. code:: erlang
 
     Erlang/OTP 22 [erts-10.7.2] [source] [64-bit] [smp:8:8] [ds:8:8:10] [async-threads:1] [hipe] [dtrace]
 
