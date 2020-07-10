@@ -1,13 +1,16 @@
 %%%  Concurrent Programming In Erlang -- The University of Kent / FutureLearn
 %%%  Exercise  : https://www.futurelearn.com/courses/concurrent-programming-erlang/3/steps/488342
-%%%  v3 - += Showing size of mailbox
+%%%  v3 - += Showing size of mailbox, clearing mailbox at client & server,
+%%%          imposing server load by sleeping+
 %%%
-%%% Last Modified Time-stamp: <2020-07-10 13:59:31, updated by Pierre Rouleau>
+%%% Last Modified Time-stamp: <2020-07-10 15:22:45, updated by Pierre Rouleau>
 %% -----------------------------------------------------------------------------
 
 %% What's New
 %% ----------
-%% - v3:  - Added show_mailbox() public function to show number of messages
+%% - v3.1: - Added a clear in the server's loop, before the timer:sleep call so I can
+%%           get several messages to accumulate.
+%% - v3:  - Added show_mailbox() public functions to show number of messages
 %%          accumulating in the server and also to see the ones accumulating in the client.
 %%        - Removed other debug prints I introduced in v2.1.
 %%        - Removed the catch-all Msg reception in loop/0 I used for debugging v2.
@@ -237,8 +240,14 @@ init() ->
     loop(FreqDb).
 
 loop(FreqDb) ->
+    %% extract WaitTime
     {_Allocated, _Free, {sleep_period, WaitTime}} = FreqDb,
+    %% clear the mailbox
+    Cleared = clear(),
+    io:format("frequency loop(): cleared: ~w~n", [Cleared]),
+    %% simulate a server load
     timer:sleep(WaitTime),
+    %% normal processing
     receive
         {request, Pid, allocate} ->
             {NewFreqDb, Result} = allocate(FreqDb, Pid),

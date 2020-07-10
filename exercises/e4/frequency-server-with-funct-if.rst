@@ -4,7 +4,7 @@
 ============================================================
 
 :Home page: https://github.com/pierre-rouleau/trying-erlang
-:Time-stamp: <2020-07-10 14:20:56, updated by Pierre Rouleau>
+:Time-stamp: <2020-07-10 15:31:23, updated by Pierre Rouleau>
 
 This page describes work related to the `exercise 4`_, the second exercise of the
 second week of the course `Concurrent Programming in Erlang`_.
@@ -1054,7 +1054,7 @@ made it public to use it for the client-side.
 Erlang Code
 ~~~~~~~~~~~
 
-:code file: `e4/v3/frequency.erl`_
+:code file: `e4/v3/frequency.erl`_  (final code)
 
 .. _e4/v3/frequency.erl: v3/frequency.erl
 
@@ -1320,10 +1320,642 @@ new PID.
     34>
 
 
+Clearing Server mailbox in frequency:loop
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The last step is to get the server to clear its mailbox. It's done like the clients:
+before receiving.  But, unlike the server, the clients do tot sleep.  The
+location of the clear in the server is before the sleep, to give me some time
+in filling up the server mailbox.
+
+The difference with the previous version of the source code is:
+
+.. code:: diff
+
+    diff --git a/exercises/e4/v3/frequency.erl b/exercises/e4/v3/frequency.erl
+    index 03709b0..12f76a6 100644
+    --- a/exercises/e4/v3/frequency.erl
+    +++ b/exercises/e4/v3/frequency.erl
+    @@ -2,12 +2,14 @@
+     %%%  Exercise  : https://www.futurelearn.com/courses/concurrent-programming-erlang/3/steps/488342
+     %%%  v3 - += Showing size of mailbox
+     %%%
+    -%%% Last Modified Time-stamp: <2020-07-10 13:59:31, updated by Pierre Rouleau>
+    +%%% Last Modified Time-stamp: <2020-07-10 14:40:00, updated by Pierre Rouleau>
+     %% -----------------------------------------------------------------------------
+
+     %% What's New
+     %% ----------
+    -%% - v3:  - Added show_mailbox() public function to show number of messages
+    +%% - v3.1: - Added a clear in the server's loop, before the timer:sleep call so I can
+    +%%           get several messages to accumulate.
+    +%% - v3:  - Added show_mailbox() public functions to show number of messages
+     %%          accumulating in the server and also to see the ones accumulating in the client.
+     %%        - Removed other debug prints I introduced in v2.1.
+     %%        - Removed the catch-all Msg reception in loop/0 I used for debugging v2.
+    @@ -237,8 +239,14 @@ init() ->
+         loop(FreqDb).
+
+     loop(FreqDb) ->
+    +    %% extract WaitTime
+         {_Allocated, _Free, {sleep_period, WaitTime}} = FreqDb,
+    +    %% clear the mailbox
+    +    Cleared = clear(),
+    +    io:format("frequency loop(): cleared: ~w~n", [Cleared]),
+    +    %% simulate a server load
+         timer:sleep(WaitTime),
+    +    %% normal processing
+         receive
+             {request, Pid, allocate} ->
+                 {NewFreqDb, Result} = allocate(FreqDb, Pid),
+
+
+And the final code is...
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+With the ``io:format`` statements that a half-decent job of logging the
+internal activity...
+
+:code file: `e4/v3/frequency.erl`_
+
+    %%%  Concurrent Programming In Erlang -- The University of Kent / FutureLearn
+    %%%  Exercise  : https://www.futurelearn.com/courses/concurrent-programming-erlang/3/steps/488342
+    %%%  v3 - += Showing size of mailbox, clearing mailbox at client & server,
+    %%%          imposing server load by sleeping+
+    %%%
+    %%% Last Modified Time-stamp: <2020-07-10 15:22:45, updated by Pierre Rouleau>
+    %% -----------------------------------------------------------------------------
+
+    %% What's New
+    %% ----------
+    %% - v3.1: - Added a clear in the server's loop, before the timer:sleep call so I can
+    %%           get several messages to accumulate.
+    %% - v3:  - Added show_mailbox() public functions to show number of messages
+    %%          accumulating in the server and also to see the ones accumulating in the client.
+    %%        - Removed other debug prints I introduced in v2.1.
+    %%        - Removed the catch-all Msg reception in loop/0 I used for debugging v2.
+    %% - v2.1: - Fixed a bug in loop patter for set_wait: A *new* variable must be
+    %%           used for the time: ``NewWaitTime`` otherwise it patterns match
+    %%           only if the wait time value does *not* change!
+    %%         - Placed clear() code close to where it's used.
+    %%         - Added several io:format to see the clear and delay activities.
+    %% - v2: instrument for simulating server loading:
+    %%       - client can now timeout after CLIENT_RX_TIMEOUT (set to 1 second via a macro)
+    %%       - Data structure change: FreDb has a TestData field.
+    %%         For now it holds a tuple of 1 tagged value: {sleep_period, integer}
+    %%         identifying the time the server should sleep before each receive
+    %%         to let message accumulate in its mailbox.
+    %%       - Added new debug command/message: set_server_load/1 which identifies
+    %%         how long the server should sleep.
+    %%       - Added clear/0 which clears a mailbox, printing each message removed
+    %%         and returning the number of cleared message.
+    %%         It is called by the client before the client sends a new request,
+    %%         to flush previous un-processed replies.
+    %% - v1: Providing a functional interface to the requests:
+    %%       - allocate()
+    %%       - deallocate(Freq)
+    %%       - dump()
+    %%       - stop()
+    %%
+
+    %% Supported Transactions
+    %% ----------------------
+    %%
+    %% Here's the representation of the supported transactions:
+    %%
+    %% @startuml
+    %%
+    %% actor Client
+    %% boundary API
+    %% database Frequency
+    %%
+    %% == Operation: start the server ==
+    %% Client ->o API : start()
+    %% API    o-->o Frequency : register(spawn())
+    %% Client <-o API : ok | {error, Error}
+    %%
+    %% == Operation: successful allocation ==
+    %%
+    %% Client ->o API : allocate()
+    %% API --> Frequency : {request, Pid, allocate}
+    %% API <-- Frequency : {reply, {ok, Freq}}
+    %% Client <-o API : {ok, Freq}
+    %%
+    %% == Operation: successful de-allocation ==
+    %%
+    %% Client ->o API: deallocate(Freq)
+    %% API    --> Frequency : {request, Pid, {deallocate, Freq}}
+    %% API    <-- Frequency : {reply, ok}
+    %% Client <-o  API : ok
+    %%
+    %%
+    %% == Timeout: *for any command*: timeout waiting for server reply ==
+    %%
+    %% Client -> API : allocate() | deallocate(Freq) | dump() | set_server_load(WaitTime)
+    %% API  -->x Frequency : {request, Pid, Msg}
+    %% Client <- API : {error, timeout}
+    %%
+    %% == Error: failed allocation (no available frequency) ==
+    %%
+    %% Client ->o API : allocate()
+    %% API    --> Frequency : {request, Pid, allocate}
+    %% API    <-- Frequency : {reply, {error, no_frequency}}
+    %% Client <-o API : {error, no_frequency}
+    %%
+    %% == Error: failed allocation (client already owns one) ==
+    %%
+    %% Client ->o API : allocate()
+    %% API --> Frequency : {request, Pid, allocate}
+    %% API <-- Frequency : {reply, {error, client_already_owns, Freq}}
+    %% Client <-o API : {error, client_already_owns, Freq}
+    %%
+    %% == Error: failed de-allocation (frequency not allocated by client) ==
+    %%
+    %% Client ->o API : deallocate(Freq)
+    %% API --> Frequency : {request, Pid, {deallocate, Freq}}
+    %% API <-- Frequency : {reply, {error, client_does_not_own, Freq}}
+    %% Client <-o  API : {error, client_does_not_own, Freq}
+    %%
+    %% == Development help: dump DB ==
+    %%
+    %% Client ->o API : dump()
+    %% API --> Frequency : {request, Pid, dump}
+    %% API <-- Frequency : {reply, FreqDb}
+    %% Client <-o API : FreqDb
+    %%
+    %% == Development help: set server load ==
+    %%
+    %% Client ->o API : set_server_load(WaitTime)
+    %% API --> Frequency : {request, Pid, {set_wait, WaitTime}}
+    %% API <-- Frequency : {reply, {ok, OldWaitTime}}
+    %% Client <-o API : {ok, OldWaitTime}
+    %%
+    %% == Shutdown ==
+    %%
+    %% Client ->o API: stop()
+    %% API --> Frequency : {request, Pid, stop}
+    %% API <-- Frequency : {reply, stopped}
+    %% Client <-o API : stopped
+    %%
+    %% @enduml
+
+    %% Server Functional State / Data Model
+    %% ------------------------------------
+    %% The server functional state is:
+    %% - a pair of lists {Free, Allocated}
+    %%   - Free := a list of frequency integers
+    %%   - Allocated: a list of {Freq, UserPid}
+    %%
+    %% Db access functions:
+    %% - allocate/2   : Allocate any frequency  for Client
+    %% - deallocate/3 : de-allocate client owned frequency
+    %%   - is_owner/2 : predicate: return {true, Freq} if Client owns a frequency,
+    %%                  False otherwise.
+    %%   - owns/3     : predicate: return true if Client owns a specific frequency.
+
+
+    -module(frequency).
+    -export([ start/0
+            , init/0
+            , allocate/0
+            , deallocate/1
+            , dump/0
+            , set_server_load/1
+            , show_mailbox/0
+            , show_mailbox/1
+            , stop/0]).
+
+    %% Data Model:
+    %%    FreqDb := { free     : [integer],
+    %%                allocated: [{integer, pid}]
+    %%                test     : sleep_period := integer
+    %%               }
+
+
+    %%% Public API
+    -define(CLIENT_RX_TIMEOUT, 3000).   % Timeout for client waiting for server reply.
+
+    %% start/0 : start the server
+    %%  return : ok | {error, Error}
+    start() ->
+        case register(frequency, spawn(frequency, init, [])) of
+            true ->  ok;
+            Error -> {error, Error}
+        end.
+
+    %% allocate/0 : allocate a frequency for the caller's process
+    %%     return :  {ok, Freq} | {error, client_already_own, Freq{}
+    allocate() ->
+        Cleared = clear(),
+        io:format("set_server_load(): cleared: ~w~n", [Cleared]),
+        frequency ! {request, self(), allocate},
+        receive {reply, Reply} ->
+                 Reply
+        after ?CLIENT_RX_TIMEOUT -> {error, timeout}
+        end.
+
+    %% deallocate/1 : deallocate a specified frequency that should have
+    %%                already have been allocated by the caller's process.
+    %%       return : ok | {error, client_does_not_own, Freq}
+    deallocate(Freq) ->
+        Cleared = clear(),
+        io:format("set_server_load(): cleared: ~w~n", [Cleared]),
+        frequency ! {request, self(), {deallocate, Freq}},
+        receive {reply, Reply} ->
+                Reply
+        after ?CLIENT_RX_TIMEOUT -> {error, timeout}
+        end.
+
+    %% dump/0 : return internal database data (should really be debug only)
+    dump() ->
+        Cleared = clear(),
+        io:format("set_server_load(): cleared: ~w~n", [Cleared]),
+        frequency ! {request, self(), dump},
+        receive {reply, FreqDb} ->
+                FreqDb
+        after ?CLIENT_RX_TIMEOUT -> {error, timeout}
+        end.
+
+    %% set_server_load/1 : WaitTime (in milliseconds)
+    %% Return: ok | {error, timeout}
+    set_server_load(WaitTime) ->
+        io:format("set_server_load()~n"),
+        Cleared = clear(),
+        io:format("set_server_load(): cleared: ~w~n", [Cleared]),
+        frequency ! {request, self(), {set_wait, WaitTime}},
+        receive {reply, Reply} ->
+                Reply
+        after ?CLIENT_RX_TIMEOUT -> {error, timeout}
+        end.
+
+    % stop/0 : stop the frequency server
+    stop() ->
+        clear(),
+        frequency ! {request, self(), stop},
+        receive {reply, Reply} ->
+                Reply
+        after ?CLIENT_RX_TIMEOUT -> {error, timeout}
+        end.
+
+    %%% Client API utility function
+
+    %% clear/0: clear the mailbox
+    %%   return: number of cleared messages.
+    %%   side effect: prints each cleared message on stdout.
+
+    clear() -> clear(0).
+    clear(ClearCount) ->
+        receive
+            Msg ->
+                io:format("Cleared Message: ~w~n", [Msg]),
+                clear(ClearCount + 1)
+        after 0 -> {ok, ClearCount}
+        end.
+
+    %% -----------------------------------------------------------------------------
+    %%% Server - Internal process logic
+
+    init() ->
+        FreqDb = {get_frequencies(), [], {sleep_period, 0}},
+        loop(FreqDb).
+
+    loop(FreqDb) ->
+        %% extract WaitTime
+        {_Allocated, _Free, {sleep_period, WaitTime}} = FreqDb,
+        %% clear the mailbox
+        Cleared = clear(),
+        io:format("frequency loop(): cleared: ~w~n", [Cleared]),
+        %% simulate a server load
+        timer:sleep(WaitTime),
+        %% normal processing
+        receive
+            {request, Pid, allocate} ->
+                {NewFreqDb, Result} = allocate(FreqDb, Pid),
+                Pid ! {reply, Result},
+                loop(NewFreqDb);
+            {request, Pid, {deallocate, Freq}}  ->
+                {NewFreqDb, Result} = deallocate(FreqDb, Freq, Pid),
+                Pid! {reply, Result},
+                loop(NewFreqDb);
+            {request, Pid, dump} ->
+                Pid! {reply, FreqDb},
+                loop(FreqDb);
+            {request, Pid, {set_wait, NewWaitTime}} ->
+                {NewFreqDb, Result} = set_wait(FreqDb, NewWaitTime),
+                Pid ! {reply, Result},
+                loop(NewFreqDb);
+            {request, Pid, stop} ->
+                Pid! {reply, stopped}
+        end.
+
+
+
+    %% Frequency 'Database' management functions.
+
+    %% allocate/2: FreqDb, ClientPid
+    %% allocate a frequency for ClientPid.  Allow 1 frequency per Client.
+    %% Return:  {FreqDb, Reply}
+    %%   1) when all frequencies are allocated (none free)
+    allocate({[], Allocated, TestData}, _Pid) ->
+        { {[], Allocated, TestData},
+          {error, no_frequency} };
+    %%   2) with some available frequency/ies
+    allocate({[Freq|Free], Allocated, TestData}, Pid) ->
+        case is_owner(Allocated, Pid) of
+            false ->    { {Free, [{Freq, Pid} | Allocated], TestData},
+                          {ok, Freq} };
+            {true, OwnedFreq} -> { {[Freq|Free], Allocated, TestData},
+                                   {error, client_already_owns, OwnedFreq} }
+        end.
+
+    %% deallocate/3 : FreqDb, Freq, Pid
+    %% de-allocate client owned frequency
+    %% Return:  {FreqDb, Reply}
+    deallocate({Free, Allocated, TestData}, Freq, Pid) ->
+        case owns(Allocated, Freq, Pid) of
+            true ->     NewAllocated = lists:keydelete(Freq, 1, Allocated),
+                        { {[Freq|Free], NewAllocated, TestData},
+                          ok };
+            false ->    { {Free, Allocated, TestData},
+                          {error, client_does_not_own, Freq} }
+        end.
+
+    %% set_wait/2: FreqDb, WaitTime
+    %% set server sleep time to WaitTime
+    %% Return: {FreqDb, {ok, OldWaitTime}}
+    set_wait({Free, Allocated, {sleep_period, OldWaitTime}}, WaitTime) ->
+        {{Free, Allocated, {sleep_period, WaitTime}}, {ok, OldWaitTime}}.
+
+
+    %% show_mailbox/0 : print and return process mailbox size on stdout
+    show_mailbox() ->
+        show_mailbox(self()).
+
+    %% show_mailbox/1 : print and return process mailbox size on stdout
+    show_mailbox(Pid) ->
+        {message_queue_len, MsgCount} = process_info(Pid, message_queue_len),
+        io:format("Size of ~w mailbox: ~w~n", [self(), MsgCount]),
+        MsgCount.
+
+    %%% Database verification
+
+    %% is_owner/2 : Allocated, ClientPid
+    %% Return {true, Freq} when ClientPid already owns a frequency, false otherwise.
+    is_owner([], _ClientPid) -> false;
+    is_owner([{Freq, ClientPid} | _AllocatedTail], ClientPid) -> {true, Freq};
+    is_owner([_Head | Tail], ClientPid) -> is_owner(Tail, ClientPid).
+
+    %% owns/3 : Allocated, Freq, ClientPid
+    %% Return true when ClientPid owns Freq, false otherwise.
+    owns([], _Freq, _ClientPid) -> false;
+    owns([{Freq, ClientPid} | _AllocatedTail], Freq, ClientPid) -> true;
+    owns([_Head | Tail], Freq, ClientPid) -> owns(Tail, Freq, ClientPid).
+
+
+    %%% Database initialization
+
+    get_frequencies() ->
+        [10,11,12,13,14,15].
+
+    %% -----------------------------------------------------------------------------
+
+
+
+
+
+Trying it with the Erlang Shell
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Here's the session with the Erlang shell, non-touched with all of the typos
+that force a re-spawn of the shell.
+
+It's a long one. I sent several invalid messages to the server to see it
+accumulate in its mailbox and also to see them cleared automatically.
+
+Since both the client functions and the server loop print to stdout, the lines
+are sometimes intermingled. It seems that Erlang treats a line output as a
+critical section because the content of lines themselves are not affected,
+just their order.
+
+.. code: erlang
+
+    Erlang/OTP 22 [erts-10.7.2] [source] [64-bit] [smp:8:8] [ds:8:8:10] [async-threads:1] [hipe] [dtrace]
+
+    Eshell V10.7.2  (abort with ^G)
+    1> c("/Users/roup/doc/trying-erlang/exercises/e4/v3/frequency", [{outdir, "/Users/roup/doc/trying-erlang/exercises/e4/v3/"}]).
+    c("/Users/roup/doc/trying-erlang/exercises/e4/v3/frequency", [{outdir, "/Users/roup/doc/trying-erlang/exercises/e4/v3/"}]).
+    {ok,frequency}
+    2> S = self().
+    <0.79.0>
+    3> F=frequency.
+    frequency
+    4> whereis(F).
+    undefined
+    5> F:start().
+    frequency loop(): cleared: {ok,0}
+    ok
+    6> whereis(F).
+    <0.89.0>
+    7> F:dump().
+    set_server_load(): cleared: {ok,0}
+    frequency loop(): cleared: {ok,0}
+    {[10,11,12,13,14,15],[],{sleep_period,0}}
+    8> F:allocate().
+    set_server_load(): cleared: {ok,0}
+    frequency loop(): cleared: {ok,0}
+    {ok,10}
+    9> F:dump().
+    set_server_load(): cleared: {ok,0}
+    frequency loop(): cleared: {ok,0}
+    {[11,12,13,14,15],[{10,<0.79.0>}],{sleep_period,0}}
+    10> F ! 42.
+    42
+    11> F ! "the meaning of life".
+    "the meaning of life"
+    12> F:show_mailbox().
+    Size of <0.79.0> mailbox: 0
+    0
+    13> F:show_mailbox(whereis(F)).
+    Size of <0.79.0> mailbox: 2
+    2
+    14> F:set_server_load(30 * 1000).
+    set_server_load()
+    set_server_load(): cleared: {ok,0}
+    Cleared Message: 42
+    Cleared Message: [116,104,101,32,109,101,97,110,105,110,103,32,111,102,32,108,105,102,101]
+    {ok,0}
+    frequency loop(): cleared: {ok,2}
+    15> F ! 43.
+    43
+    16> F ! 44.
+    44
+    17> F:show_mailbox(whereis(F)).
+    Size of <0.79.0> mailbox: 2
+    2
+    18> F:allocate().
+    set_server_load(): cleared: {ok,0}
+    Cleared Message: 43
+    Cleared Message: 44
+    {error,client_already_owns,10}
+    frequency loop(): cleared: {ok,2}
+    19> F:allocate().
+    set_server_load(): cleared: {ok,0}
+    {error,timeout}
+    20> F:allocate().
+    set_server_load(): cleared: {ok,0}
+    {error,timeout}
+    21> F ! 45.
+    45
+    22> F:allocate().
+    set_server_load(): cleared: {ok,0}
+    {error,timeout}
+    Cleared Message: {request,<0.79.0>,allocate}
+    Cleared Message: 45
+    Cleared Message: {request,<0.79.0>,allocate}
+    frequency loop(): cleared: {ok,3}
+    23> F:dump().
+    Cleared Message: {reply,{error,client_already_owns,10}}
+    set_server_load(): cleared: {ok,1}
+    {error,timeout}
+    24> F:show_mailbox(whereis(F)).
+    Size of <0.79.0> mailbox: 1
+    1
+    frequency loop(): cleared: {ok,0}
+    25> F:show_mailbox(whereis(F)).
+    Size of <0.79.0> mailbox: 0
+    0
+    26> whereis(F).
+    <0.89.0>
+    27> self().
+    <0.79.0>
+    28> F ! 1.
+    1
+    29> F ! 2.
+    2
+    30> F:show_mailbox(whereis(F)).
+    Size of <0.79.0> mailbox: 2
+    2
+    31> F:show_mailbox().
+    Size of <0.79.0> mailbox: 1
+    1
+    32> flush().
+    Shell got {reply,{[11,12,13,14,15],[{10,<0.79.0>}],{sleep_period,30000}}}
+    ok
+    33> F:dump().
+    set_server_load(): cleared: {ok,0}
+    Cleared Message: 1
+    Cleared Message: 2
+    {[11,12,13,14,15],[{10,<0.79.0>}],{sleep_period,30000}}
+    frequency loop(): cleared: {ok,2}
+    34> F:allocate().
+    set_server_load(): cleared: {ok,0}
+    frequency loop(): cleared: {ok,0}
+    {error,client_already_owns,10}
+    35> F:allocate().
+    set_server_load(): cleared: {ok,0}
+    {error,timeout}
+    36> F:allocate().
+    set_server_load(): cleared: {ok,0}
+    F:allocate().
+    {error,timeout}
+    37> F:allocate().
+    set_server_load(): cleared: {ok,0}
+    {error,timeout}
+    38> F:allocate().
+    set_server_load(): cleared: {ok,0}
+    {error,timeout}
+    39> F:show_mailbox(whereis(F)).
+    Size of <0.79.0> mailbox: 4
+    4
+    Cleared Message: {request,<0.79.0>,allocate}
+    Cleared Message: {request,<0.79.0>,allocate}
+    Cleared Message: {request,<0.79.0>,allocate}
+    frequency loop(): cleared: {ok,3}
+    40> f:dump().
+    ** exception error: undefined function f:dump/0
+    41> F:fump().
+    ** exception error: undefined function frequency:fump/0
+    42> F:dump().
+    set_server_load(): cleared: {ok,0}
+    {error,timeout}
+    frequency loop(): cleared: {ok,0}
+    43> F:dump().
+    Cleared Message: {reply,{[11,12,13,14,15],[{10,<0.79.0>}],{sleep_period,30000}}}
+    set_server_load(): cleared: {ok,1}
+    {error,timeout}
+    44> F:allocate().
+    set_server_load(): cleared: {ok,0}
+    {error,timeout}
+    45> F:allocate().
+    set_server_load(): cleared: {ok,0}
+    {error,timeout}
+    Cleared Message: {request,<0.127.0>,allocate}
+    Cleared Message: {request,<0.127.0>,allocate}
+    frequency loop(): cleared: {ok,2}
+    46> F:allocate().
+    Cleared Message: {reply,{[11,12,13,14,15],[{10,<0.79.0>}],{sleep_period,30000}}}
+    set_server_load(): cleared: {ok,1}
+    {error,timeout}
+    47> F:allocate().
+    set_server_load(): cleared: {ok,0}
+    {error,timeout}
+    48> F:allocate().
+    set_server_load(): cleared: {ok,0}
+    {error,timeout}
+    49> F:allocate().
+    set_server_load(): cleared: {ok,0}
+    {error,timeout}
+    50> F:allocate().
+    set_server_load(): cleared: {ok,0}
+    Cleared Message: {request,<0.127.0>,allocate}
+    Cleared Message: {request,<0.127.0>,allocate}
+    {ok,11}
+    Cleared Message: {request,<0.127.0>,allocate}
+    Cleared Message: {request,<0.127.0>,allocate}
+    frequency loop(): cleared: {ok,4}
+    51> F:allocate().
+    set_server_load(): cleared: {ok,0}
+    {error,timeout}
+    52> F:allocate().
+    set_server_load(): cleared: {ok,0}
+    {error,timeout}
+    53> F:allocate().
+    set_server_load(): cleared: {ok,0}
+    {error,timeout}
+    54> F:stop().
+    Cleared Message: {request,<0.127.0>,allocate}
+    Cleared Message: {request,<0.127.0>,allocate}
+    {error,client_already_owns,11}
+    Cleared Message: {request,<0.127.0>,stop}
+    frequency loop(): cleared: {ok,3}
+    55> F:stop().
+    {error,timeout}
+    56> F:stop().
+    Cleared Message: {reply,stopped}
+    ** exception error: bad argument
+         in function  frequency:stop/0 (/Users/roup/doc/trying-erlang/exercises/e4/v3/frequency.erl, line 213)
+    57>
+
+
 Looking Back
 ~~~~~~~~~~~~
 
-I'm not done yet but I can't help than wonder if I could just have the server
-register the *name* of the shell as a client instead of its PID to associate
-the frequencies.  If a client dies, and restart, the new client will not be
-able to de-allocate the frequency that was allocated by its previous self.
+With the shell dying and restarting I can't help than wonder if I could just
+have the server register the *name* of the shell as a client instead of its
+PID to associate the frequencies.  If a client dies, and restarts, the new
+client will not be able to de-allocate the frequency that was allocated by its
+previous self.
+
+Also, using io:format() as a poor mans tracing mechanism has it's limits:
+lines outputted by multiple processes are intermingled.  Line content integrity
+is kelp but not their order.    For a real system a better tool is needed.
+I'll have to read about tracing in Erlang.  It would also be nice to use
+something like syslog with the ability to see the output in real-time, ideally
+filtered by processes if required.
+I have used `SolarWind Kiwi Syslog server`_ in the past.  I wonder what
+people use with BEAM programming languages these days.
+
+.. _SolarWind Kiwi Syslog server: https://www.kiwisyslog.com/free-tools/kiwi-free-syslog-server
+
+
+-----------------------------------------------------------------------------
