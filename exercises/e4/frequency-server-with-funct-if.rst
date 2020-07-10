@@ -4,7 +4,7 @@
 ============================================================
 
 :Home page: https://github.com/pierre-rouleau/trying-erlang
-:Time-stamp: <2020-07-10 12:11:30, updated by Pierre Rouleau>
+:Time-stamp: <2020-07-10 12:23:42, updated by Pierre Rouleau>
 
 This page describes work related to the `exercise 4`_, the second exercise of the
 second week of the course `Concurrent Programming in Erlang`_.
@@ -431,6 +431,9 @@ handling the reception of the set_server_load request.  I fixed it in v2.1,
 but you'll have to see the file history for the changes between v2 and v2.1.
 
 I have also updated the PlantUML diagram to represent the concept of timeout.
+
+Note, however, that I have not added a clear in the server yet.   I want to do
+this on request.  That will be my next and final step.
 
 Sequence Diagram
 ~~~~~~~~~~~~~~~~
