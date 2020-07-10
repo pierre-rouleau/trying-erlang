@@ -4,7 +4,7 @@
 ============================================================
 
 :Home page: https://github.com/pierre-rouleau/trying-erlang
-:Time-stamp: <2020-07-10 12:23:42, updated by Pierre Rouleau>
+:Time-stamp: <2020-07-10 12:26:03, updated by Pierre Rouleau>
 
 This page describes work related to the `exercise 4`_, the second exercise of the
 second week of the course `Concurrent Programming in Erlang`_.
@@ -410,8 +410,8 @@ source code.  That might have already been done.
 
 -----------------------------------------------------------------------------
 
-Version 2- Simulating a Server Load and clear filled mailbox
-------------------------------------------------------------
+Version 2- Simulating a Server Load and clearing client's mailbox
+-----------------------------------------------------------------
 
 I am now adding what is requested by the exercise:
 
