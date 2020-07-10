@@ -4,7 +4,7 @@
 ============================================================
 
 :Home page: https://github.com/pierre-rouleau/trying-erlang
-:Time-stamp: <2020-07-10 12:26:03, updated by Pierre Rouleau>
+:Time-stamp: <2020-07-10 13:16:12, updated by Pierre Rouleau>
 
 This page describes work related to the `exercise 4`_, the second exercise of the
 second week of the course `Concurrent Programming in Erlang`_.
@@ -977,6 +977,12 @@ time it would have taken to do it right.  The correct ``loop/0`` code is:
 Having ``WaitTime`` in the pattern meant that the server would only receive
 messages requesting to change the sleep time to the same value it had!
 
+One thing I did looking into this problem was to add a catch-all message
+reception inside the server loop.  This is defensive programming but that's
+also what confirmed to me the message was received in the mailbox but not
+caught by the pattern.  I'll have to remember to remove it: I'll probably want
+to fill the mailbox just be sending invalid messages!
+
 
 An error caught in the shell creates another process!
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1003,3 +1009,137 @@ surprises.
 
 ..
    -----------------------------------------------------------------------------
+
+Version 3 - A Loaded Server that can clear its mailbox
+------------------------------------------------------
+
+My previous version is using clear/0 to clear the mailbox of the client side.
+That is useful when the caller is expecting that its calls will not block his
+process for too long.  Note, however, that because the server is *not*
+clearing its mailbox, it will get old replies, process them and send the reply
+back to the client that is no longer expecting it.  Because the client code
+clears its mailbox in **each** of the functional interface calls, its OK but
+messages will accumulate inside the server still.
+
+By placing a ``clear/0`` call inside the server's loop/0 just before the
+receive statement, the simulation will be closer to reality: the clients
+requests that have timed-out at the client side will effectively be ignored by
+the server.
+
+All that is needed is to add the call to ``clear/0`` before the receive
+statement.  And where should it be relative to the call to ``timer:sleep/1``?
+
+If I call ``clear/0`` before the ``timer:sleep/1`` that gives me the time to fill it
+up again while the server sleeping.  In fact that's why I did not put the
+clear call in the server in the first place: I wanted to let the messages
+accumulate in the server mailbox.
+
+But one thing was missing.  I would have liked to **confirm** the messages
+accumulated inside the server's mailbox.  I'm sure there must be a function
+call to get the number of messages in the mailbox.
+
+To find it I had to "*google*" it because I did not find anything in the
+*erlang* man page (the page for the BIFs).  It was there though: it's
+``process_info/2`` with a ``message_queue_len`` for the second argument.
+
+So I added a call to this first in the v3 code before completing it.  Just so
+I could see the count growing up.  I added the show_mailbox() for that and I
+made it public to use it for the client-side.
+
+
+Erlang Code
+~~~~~~~~~~~
+
+:code file: `e4/v3/frequency.erl`_
+
+.. _e4/v2/frequency.erl: v3/frequency.erl
+
+The difference between v2.1 and v3 is shown here:
+
+.. code:: diff
+
+    diff -u /Users/roup/doc/trying-erlang/exercises/e4/v2/frequency.erl /Users/roup/doc/trying-erlang/exercises/e4/v3/frequency.erl
+    --- /Users/roup/doc/trying-erlang/exercises/e4/v2/frequency.erl	2020-07-10 10:57:29.000000000 -0400
+    +++ /Users/roup/doc/trying-erlang/exercises/e4/v3/frequency.erl	2020-07-10 13:11:38.000000000 -0400
+    @@ -1,12 +1,16 @@
+     %%%  Concurrent Programming In Erlang -- The University of Kent / FutureLearn
+     %%%  Exercise  : https://www.futurelearn.com/courses/concurrent-programming-erlang/3/steps/488342
+    -%%%  v2 - += Flushing the mailbox, adding timeout to client code
+    +%%%  v3 - += Showing size of mailbox
+     %%%
+    -%%% Last Modified Time-stamp: <2020-07-10 10:57:29, updated by Pierre Rouleau>
+    +%%% Last Modified Time-stamp: <2020-07-10 13:11:38, updated by Pierre Rouleau>
+     %% -----------------------------------------------------------------------------
+
+     %% What's New
+     %% ----------
+    +%% - v3:  - Added show_mailbox() public function to show number of messages
+    +%%          accumulating in the server and also to see the ones accumulating in the client.
+    +%%        - Removed other debug prints I introduced in v2.1.
+    +%%        - Removed the catch-all Msg reception in loop/0 I used for debugging v2.
+     %% - v2.1: - Fixed a bug in loop patter for set_wait: A *new* variable must be
+     %%           used for the time: ``NewWaitTime`` otherwise it patterns match
+     %%           only if the wait time value does *not* change!
+    @@ -128,7 +132,7 @@
+
+
+     -module(frequency).
+    --export([start/0, init/0, allocate/0, deallocate/1, dump/0, set_server_load/1,  stop/0]).
+    +-export([start/0, init/0, allocate/0, deallocate/1, dump/0, set_server_load/1, show_mailbox/0, stop/0]).
+
+     %% Data Model:
+     %%    FreqDb := { free     : [integer],
+    @@ -188,7 +192,6 @@
+         Cleared = clear(),
+         io:format("set_server_load(): cleared: ~w~n", [Cleared]),
+         frequency ! {request, self(), {set_wait, WaitTime}},
+    -    io:format("set_server_load(): request sent, waiting for reply~n"),
+         receive {reply, Reply} ->
+                 Reply
+         after ?CLIENT_RX_TIMEOUT -> {error, timeout}
+    @@ -227,9 +230,7 @@
+
+     loop(FreqDb) ->
+         {_Allocated, _Free, {sleep_period, WaitTime}} = FreqDb,
+    -    io:format("loop: waiting ~w...~n", [WaitTime]),
+         timer:sleep(WaitTime),
+    -    io:format("loop: receiving~n"),
+         receive
+             {request, Pid, allocate} ->
+                 {NewFreqDb, Result} = allocate(FreqDb, Pid),
+    @@ -243,18 +244,15 @@
+                 Pid! {reply, FreqDb},
+                 loop(FreqDb);
+             {request, Pid, {set_wait, NewWaitTime}} ->
+    -            io:format("loop received set_wait(~w)~n", [NewWaitTime]),
+                 {NewFreqDb, Result} = set_wait(FreqDb, NewWaitTime),
+                 Pid ! {reply, Result},
+                 loop(NewFreqDb);
+             {request, Pid, stop} ->
+    -            Pid! {reply, stopped};
+    -        Msg  ->
+    -            io:format("loop: rx unexpected: ~w~n", [Msg]),
+    -            loop(FreqDb)
+    +            Pid! {reply, stopped}
+         end.
+
+
+    +
+     %% Frequency 'Database' management functions.
+
+     %% allocate/2: FreqDb, ClientPid
+    @@ -292,6 +290,12 @@
+         {{Free, Allocated, {sleep_period, WaitTime}}, {ok, OldWaitTime}}.
+
+
+    +%% show_mailbox_size/0 : print and return process mailbox size on stdout
+    +show_mailbox() ->
+    +    {message_queue_len, MsgCount} = process_info(self(), message_queue_len),
+    +    io:format("Size of ~w mailbox: ~w~n", [self(), MsgCount]),
+    +              MsgCount.
+    +
+
+     %%% Database verification
+
+
+    Diff finished.  Fri Jul 10 13:14:45 2020
