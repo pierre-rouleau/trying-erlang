@@ -4,7 +4,7 @@
 ============================================================
 
 :Home page: https://github.com/pierre-rouleau/trying-erlang
-:Time-stamp: <2020-07-10 13:49:09, updated by Pierre Rouleau>
+:Time-stamp: <2020-07-10 14:20:56, updated by Pierre Rouleau>
 
 This page describes work related to the `exercise 4`_, the second exercise of the
 second week of the course `Concurrent Programming in Erlang`_.
@@ -1147,3 +1147,183 @@ The difference between v2.1 and v3 is shown here:
 
 
     Diff finished.  Fri Jul 10 13:14:45 2020
+
+..
+   -----------------------------------------------------------------------------
+
+One More Modification : show_mailbox/1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To be able to look at the server mail ox size I created show_mailbox/2 which
+takes the Pid as argument:
+
+.. code:: diff
+
+    diff --git a/exercises/e4/v3/frequency.erl b/exercises/e4/v3/frequency.erl
+    index 32e5642..03709b0 100644
+    --- a/exercises/e4/v3/frequency.erl
+    +++ b/exercises/e4/v3/frequency.erl
+    @@ -2,7 +2,7 @@
+     %%%  Exercise  : https://www.futurelearn.com/courses/concurrent-programming-erlang/3/steps/488342
+     %%%  v3 - += Showing size of mailbox
+     %%%
+    -%%% Last Modified Time-stamp: <2020-07-10 13:11:38, updated by Pierre Rouleau>
+    +%%% Last Modified Time-stamp: <2020-07-10 13:59:31, updated by Pierre Rouleau>
+     %% -----------------------------------------------------------------------------
+
+     %% What's New
+    @@ -132,7 +132,15 @@
+
+
+     -module(frequency).
+    --export([start/0, init/0, allocate/0, deallocate/1, dump/0, set_server_load/1, show_mailbox/0, stop/0]).
+    +-export([ start/0
+    +        , init/0
+    +        , allocate/0
+    +        , deallocate/1
+    +        , dump/0
+    +        , set_server_load/1
+    +        , show_mailbox/0
+    +        , show_mailbox/1
+    +        , stop/0]).
+
+     %% Data Model:
+     %%    FreqDb := { free     : [integer],
+    @@ -290,12 +298,15 @@ set_wait({Free, Allocated, {sleep_period, OldWaitTime}}, WaitTime) ->
+         {{Free, Allocated, {sleep_period, WaitTime}}, {ok, OldWaitTime}}.
+
+
+    -%% show_mailbox_size/0 : print and return process mailbox size on stdout
+    +%% show_mailbox/0 : print and return process mailbox size on stdout
+     show_mailbox() ->
+    -    {message_queue_len, MsgCount} = process_info(self(), message_queue_len),
+    -    io:format("Size of ~w mailbox: ~w~n", [self(), MsgCount]),
+    -              MsgCount.
+    +    show_mailbox(self()).
+
+    +%% show_mailbox/1 : print and return process mailbox size on stdout
+    +show_mailbox(Pid) ->
+    +    {message_queue_len, MsgCount} = process_info(Pid, message_queue_len),
+    +    io:format("Size of ~w mailbox: ~w~n", [self(), MsgCount]),
+    +    MsgCount.
+
+     %%% Database verification
+
+
+
+Session using show_mailbox
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+With the last v3 code (now submitted), I used the shell again to confirm that
+messages accumulate in the server and to watch them coming back in the client.
+
+Of course, I mis-typed several thing, creating a new shell process with its
+new PID.
+
+.. code:: erlang
+
+    Erlang/OTP 22 [erts-10.7.2] [source] [64-bit] [smp:8:8] [ds:8:8:10] [async-threads:1] [hipe] [dtrace]
+
+    Eshell V10.7.2  (abort with ^G)
+    1> c("/Users/roup/doc/trying-erlang/exercises/e4/v3/frequency", [{outdir, "/Users/roup/doc/trying-erlang/exercises/e4/v3/"}]).
+    c("/Users/roup/doc/trying-erlang/exercises/e4/v3/frequency", [{outdir, "/Users/roup/doc/trying-erlang/exercises/e4/v3/"}]).
+    {ok,frequency}
+    2> frequency:start().
+    ok
+    3> self().
+    <0.79.0>
+    4> whereis(frequency).
+    <0.86.0>
+    5> frequency:dump().
+    set_server_load(): cleared: {ok,0}
+    {[10,11,12,13,14,15],[],{sleep_period,0}}
+    6> show_mailbox().
+    ** exception error: undefined shell command show_mailbox/0
+    7> self().
+    <0.91.0>
+    8> frequency:show_mailbox().
+    Size of <0.91.0> mailbox: 0
+    0
+    9> frequency:show_mailbox(whereis(frequency)).
+    Size of <0.91.0> mailbox: 0
+    0
+    10> frequency ! "an invalid message".
+    "an invalid message"
+    11> frequency ! {request, slef(), invalid}.
+    ** exception error: undefined shell command slef/0
+    12> self().
+    <0.97.0>
+    13> S = self().
+    <0.97.0>
+    14> frequency ! {request, S, invalid}.
+    {request,<0.97.0>,invalid}
+    15> frequency:show_mailbox(whereis(frequency)).
+    Size of <0.97.0> mailbox: 2
+    2
+    16> frequency:show_mailbox().
+    Size of <0.97.0> mailbox: 0
+    0
+    17> frequency:dump().
+    set_server_load(): cleared: {ok,0}
+    {[10,11,12,13,14,15],[],{sleep_period,0}}
+    18> frequency:set_server_load(30 * 1000).
+    set_server_load()
+    set_server_load(): cleared: {ok,0}
+    {ok,0}
+    19>
+    19> frequency:allocate().
+    set_server_load(): cleared: {ok,0}
+    {error,timeout}
+    20> frequency:dump().
+    set_server_load(): cleared: {ok,0}
+    {error,timeout}
+    21> frequency:allocate().
+    Cleared Message: {reply,{ok,10}}
+    set_server_load(): cleared: {ok,1}
+    {error,timeout}
+    22> frequency:show_mailbox(whereis(frequency)).
+    Size of <0.97.0> mailbox: 3
+    3
+    23> frequency:show_mailbox(whereis(frequency)).
+    Size of <0.97.0> mailbox: 3
+    3
+    24> frequency:show_mailbox(whereis(frequency)).
+    Size of <0.97.0> mailbox: 3
+    3
+    25> frequency:show_mailbox(whereis(frequency)).
+    Size of <0.97.0> mailbox: 2
+    2
+    26> frequency:show_mailbox().
+    Size of <0.97.0> mailbox: 2
+    2
+    27> flush().
+    Shell got {reply,{[11,12,13,14,15],[{10,<0.97.0>}],{sleep_period,30000}}}
+    Shell got {reply,{error,client_already_owns,10}}
+    ok
+    28> frequency:set_server_load(1 * 1000).
+    set_server_load()
+    set_server_load(): cleared: {ok,0}
+    {ok,30000}
+    29>
+    29> frequency:dump().
+    set_server_load(): cleared: {ok,0}
+    {[11,12,13,14,15],[{10,<0.97.0>}],{sleep_period,1000}}
+    30> frequency:allocate().
+    set_server_load(): cleared: {ok,0}
+    {error,client_already_owns,10}
+    31> frequency:deallocate().
+    ** exception error: undefined function frequency:deallocate/0
+    32> self().
+    <0.118.0>
+    33> frequency:stop().
+    stopped
+    34>
+
+
+Looking Back
+~~~~~~~~~~~~
+
+I'm not done yet but I can't help than wonder if I could just have the server
+register the *name* of the shell as a client instead of its PID to associate
+the frequencies.  If a client dies, and restart, the new client will not be
+able to de-allocate the frequency that was allocated by its previous self.

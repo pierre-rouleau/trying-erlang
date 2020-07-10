@@ -2,7 +2,7 @@
 %%%  Exercise  : https://www.futurelearn.com/courses/concurrent-programming-erlang/3/steps/488342
 %%%  v3 - += Showing size of mailbox
 %%%
-%%% Last Modified Time-stamp: <2020-07-10 13:11:38, updated by Pierre Rouleau>
+%%% Last Modified Time-stamp: <2020-07-10 13:59:31, updated by Pierre Rouleau>
 %% -----------------------------------------------------------------------------
 
 %% What's New
@@ -132,7 +132,15 @@
 
 
 -module(frequency).
--export([start/0, init/0, allocate/0, deallocate/1, dump/0, set_server_load/1, show_mailbox/0, stop/0]).
+-export([ start/0
+        , init/0
+        , allocate/0
+        , deallocate/1
+        , dump/0
+        , set_server_load/1
+        , show_mailbox/0
+        , show_mailbox/1
+        , stop/0]).
 
 %% Data Model:
 %%    FreqDb := { free     : [integer],
@@ -290,12 +298,15 @@ set_wait({Free, Allocated, {sleep_period, OldWaitTime}}, WaitTime) ->
     {{Free, Allocated, {sleep_period, WaitTime}}, {ok, OldWaitTime}}.
 
 
-%% show_mailbox_size/0 : print and return process mailbox size on stdout
+%% show_mailbox/0 : print and return process mailbox size on stdout
 show_mailbox() ->
-    {message_queue_len, MsgCount} = process_info(self(), message_queue_len),
-    io:format("Size of ~w mailbox: ~w~n", [self(), MsgCount]),
-              MsgCount.
+    show_mailbox(self()).
 
+%% show_mailbox/1 : print and return process mailbox size on stdout
+show_mailbox(Pid) ->
+    {message_queue_len, MsgCount} = process_info(Pid, message_queue_len),
+    io:format("Size of ~w mailbox: ~w~n", [self(), MsgCount]),
+    MsgCount.
 
 %%% Database verification
 
