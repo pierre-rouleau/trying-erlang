@@ -4,7 +4,7 @@
 ============================================================
 
 :Home page: https://github.com/pierre-rouleau/trying-erlang
-:Time-stamp: <2020-07-10 13:16:12, updated by Pierre Rouleau>
+:Time-stamp: <2020-07-10 13:49:09, updated by Pierre Rouleau>
 
 This page describes work related to the `exercise 4`_, the second exercise of the
 second week of the course `Concurrent Programming in Erlang`_.
@@ -1040,7 +1040,11 @@ call to get the number of messages in the mailbox.
 
 To find it I had to "*google*" it because I did not find anything in the
 *erlang* man page (the page for the BIFs).  It was there though: it's
-``process_info/2`` with a ``message_queue_len`` for the second argument.
+`process_info/2`_ with a ``message_queue_len`` for the second argument.
+
+
+.. _process_info/2: https://erlang.org/doc/man/erlang.html#process_info-2
+
 
 So I added a call to this first in the v3 code before completing it.  Just so
 I could see the count growing up.  I added the show_mailbox() for that and I
@@ -1052,7 +1056,7 @@ Erlang Code
 
 :code file: `e4/v3/frequency.erl`_
 
-.. _e4/v2/frequency.erl: v3/frequency.erl
+.. _e4/v3/frequency.erl: v3/frequency.erl
 
 The difference between v2.1 and v3 is shown here:
 
