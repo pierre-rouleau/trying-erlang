@@ -2,11 +2,16 @@
 %%%  Exercise  : https://www.futurelearn.com/courses/concurrent-programming-erlang/3/steps/488342
 %%%  v2 - += Flushing the mailbox, adding timeout to client code
 %%%
-%%% Last Modified Time-stamp: <2020-07-09 10:27:41, updated by Pierre Rouleau>
+%%% Last Modified Time-stamp: <2020-07-10 10:57:29, updated by Pierre Rouleau>
 %% -----------------------------------------------------------------------------
 
 %% What's New
 %% ----------
+%% - v2.1: - Fixed a bug in loop patter for set_wait: A *new* variable must be
+%%           used for the time: ``NewWaitTime`` otherwise it patterns match
+%%           only if the wait time value does *not* change!
+%%         - Placed clear() code close to where it's used.
+%%         - Added several io:format to see the clear and delay activities.
 %% - v2: instrument for simulating server loading:
 %%       - client can now timeout after CLIENT_RX_TIMEOUT (set to 1 second via a macro)
 %%       - Data structure change: FreDb has a TestData field.
@@ -57,6 +62,12 @@
 %% Client <-o  API : ok
 %%
 %%
+%% == Timeout: *for any command*: timeout waiting for server reply ==
+%%
+%% Client -> API : allocate() | deallocate(Freq) | dump() | set_server_load(WaitTime)
+%% API  -->x Frequency : {request, Pid, Msg}
+%% Client <- API : {error, timeout}
+%%
 %% == Error: failed allocation (no available frequency) ==
 %%
 %% Client ->o API : allocate()
@@ -78,12 +89,19 @@
 %% API <-- Frequency : {reply, {error, client_does_not_own, Freq}}
 %% Client <-o  API : {error, client_does_not_own, Freq}
 %%
-%% == Development help ==
+%% == Development help: dump DB ==
 %%
 %% Client ->o API : dump()
 %% API --> Frequency : {request, Pid, dump}
 %% API <-- Frequency : {reply, FreqDb}
 %% Client <-o API : FreqDb
+%%
+%% == Development help: set server load ==
+%%
+%% Client ->o API : set_server_load(WaitTime)
+%% API --> Frequency : {request, Pid, {set_wait, WaitTime}}
+%% API <-- Frequency : {reply, {ok, OldWaitTime}}
+%% Client <-o API : {ok, OldWaitTime}
 %%
 %% == Shutdown ==
 %%
@@ -120,7 +138,7 @@
 
 
 %%% Public API
--define(CLIENT_RX_TIMEOUT, 1000).   % Timeout for client waiting for server reply.
+-define(CLIENT_RX_TIMEOUT, 3000).   % Timeout for client waiting for server reply.
 
 %% start/0 : start the server
 %%  return : ok | {error, Error}
@@ -133,7 +151,8 @@ start() ->
 %% allocate/0 : allocate a frequency for the caller's process
 %%     return :  {ok, Freq} | {error, client_already_own, Freq{}
 allocate() ->
-    clear(),
+    Cleared = clear(),
+    io:format("set_server_load(): cleared: ~w~n", [Cleared]),
     frequency ! {request, self(), allocate},
     receive {reply, Reply} ->
              Reply
@@ -144,7 +163,8 @@ allocate() ->
 %%                already have been allocated by the caller's process.
 %%       return : ok | {error, client_does_not_own, Freq}
 deallocate(Freq) ->
-    clear(),
+    Cleared = clear(),
+    io:format("set_server_load(): cleared: ~w~n", [Cleared]),
     frequency ! {request, self(), {deallocate, Freq}},
     receive {reply, Reply} ->
             Reply
@@ -153,7 +173,8 @@ deallocate(Freq) ->
 
 %% dump/0 : return internal database data (should really be debug only)
 dump() ->
-    clear(),
+    Cleared = clear(),
+    io:format("set_server_load(): cleared: ~w~n", [Cleared]),
     frequency ! {request, self(), dump},
     receive {reply, FreqDb} ->
             FreqDb
@@ -163,8 +184,11 @@ dump() ->
 %% set_server_load/1 : WaitTime (in milliseconds)
 %% Return: ok | {error, timeout}
 set_server_load(WaitTime) ->
-    clear(),
+    io:format("set_server_load()~n"),
+    Cleared = clear(),
+    io:format("set_server_load(): cleared: ~w~n", [Cleared]),
     frequency ! {request, self(), {set_wait, WaitTime}},
+    io:format("set_server_load(): request sent, waiting for reply~n"),
     receive {reply, Reply} ->
             Reply
     after ?CLIENT_RX_TIMEOUT -> {error, timeout}
@@ -179,8 +203,23 @@ stop() ->
     after ?CLIENT_RX_TIMEOUT -> {error, timeout}
     end.
 
+%%% Client API utility function
 
-%%% Internal process logic
+%% clear/0: clear the mailbox
+%%   return: number of cleared messages.
+%%   side effect: prints each cleared message on stdout.
+
+clear() -> clear(0).
+clear(ClearCount) ->
+    receive
+        Msg ->
+            io:format("Cleared Message: ~w~n", [Msg]),
+            clear(ClearCount + 1)
+    after 0 -> {ok, ClearCount}
+    end.
+
+%% -----------------------------------------------------------------------------
+%%% Server - Internal process logic
 
 init() ->
     FreqDb = {get_frequencies(), [], {sleep_period, 0}},
@@ -188,7 +227,9 @@ init() ->
 
 loop(FreqDb) ->
     {_Allocated, _Free, {sleep_period, WaitTime}} = FreqDb,
+    io:format("loop: waiting ~w...~n", [WaitTime]),
     timer:sleep(WaitTime),
+    io:format("loop: receiving~n"),
     receive
         {request, Pid, allocate} ->
             {NewFreqDb, Result} = allocate(FreqDb, Pid),
@@ -201,12 +242,16 @@ loop(FreqDb) ->
         {request, Pid, dump} ->
             Pid! {reply, FreqDb},
             loop(FreqDb);
-        {request, Pid, {set_wait, WaitTime}} ->
-            {NewFreqDb, Result} = set_wait(FreqDb, WaitTime),
+        {request, Pid, {set_wait, NewWaitTime}} ->
+            io:format("loop received set_wait(~w)~n", [NewWaitTime]),
+            {NewFreqDb, Result} = set_wait(FreqDb, NewWaitTime),
             Pid ! {reply, Result},
             loop(NewFreqDb);
         {request, Pid, stop} ->
-            Pid! {reply, stopped}
+            Pid! {reply, stopped};
+        Msg  ->
+            io:format("loop: rx unexpected: ~w~n", [Msg]),
+            loop(FreqDb)
     end.
 
 
@@ -240,9 +285,11 @@ deallocate({Free, Allocated, TestData}, Freq, Pid) ->
                       {error, client_does_not_own, Freq} }
     end.
 
-
-set_wait({Free, Allocated, {sleep_period, _OldWaitTime}}, WaitTime) ->
-    {{Free, Allocated, {sleep_period, WaitTime}}, ok}.
+%% set_wait/2: FreqDb, WaitTime
+%% set server sleep time to WaitTime
+%% Return: {FreqDb, {ok, OldWaitTime}}
+set_wait({Free, Allocated, {sleep_period, OldWaitTime}}, WaitTime) ->
+    {{Free, Allocated, {sleep_period, WaitTime}}, {ok, OldWaitTime}}.
 
 
 
@@ -267,13 +314,3 @@ get_frequencies() ->
     [10,11,12,13,14,15].
 
 %% -----------------------------------------------------------------------------
-
-clear() -> clear(0).
-
-clear(ClearCount) ->
-    receive
-        Msg ->
-            io:format("Cleared Message: ~w~n", [Msg]),
-            clear(ClearCount + 1)
-    after 0 -> {ok, ClearCount}
-    end.
