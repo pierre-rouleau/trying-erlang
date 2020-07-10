@@ -4,7 +4,7 @@
 ============================================================
 
 :Home page: https://github.com/pierre-rouleau/trying-erlang
-:Time-stamp: <2020-07-10 15:31:23, updated by Pierre Rouleau>
+:Time-stamp: <2020-07-10 15:34:01, updated by Pierre Rouleau>
 
 This page describes work related to the `exercise 4`_, the second exercise of the
 second week of the course `Concurrent Programming in Erlang`_.
@@ -1377,6 +1377,8 @@ With the ``io:format`` statements that a half-decent job of logging the
 internal activity...
 
 :code file: `e4/v3/frequency.erl`_
+
+.. code:: erlang
 
     %%%  Concurrent Programming In Erlang -- The University of Kent / FutureLearn
     %%%  Exercise  : https://www.futurelearn.com/courses/concurrent-programming-erlang/3/steps/488342
