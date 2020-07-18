@@ -4,7 +4,7 @@
 ============================================================
 
 :Home page: https://github.com/pierre-rouleau/trying-erlang
-:Time-stamp: <2020-07-18 11:23:00, updated by Pierre Rouleau>
+:Time-stamp: <2020-07-18 11:24:18, updated by Pierre Rouleau>
 
 This page describes work related to the `exercise 4`_, the second exercise of the
 second week of the course `Concurrent Programming in Erlang`_.
@@ -1997,7 +1997,7 @@ The new code is in:
 
 :code file: `e4/v4/frequency.erl`_
 
-.. _e4/v4/frequency.erl: e4/v4/frequency.erl
+.. _e4/v4/frequency.erl: v4/frequency.erl
 
 The changes since last version is shown below:
 
