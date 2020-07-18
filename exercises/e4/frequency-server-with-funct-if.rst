@@ -4,7 +4,7 @@
 ============================================================
 
 :Home page: https://github.com/pierre-rouleau/trying-erlang
-:Time-stamp: <2020-07-18 11:19:30, updated by Pierre Rouleau>
+:Time-stamp: <2020-07-18 11:21:29, updated by Pierre Rouleau>
 
 This page describes work related to the `exercise 4`_, the second exercise of the
 second week of the course `Concurrent Programming in Erlang`_.
@@ -1988,6 +1988,9 @@ won't see the bug. The bug was in the tracing code. But still.  A bug
 incurs a cost.
 
 .. _copy/paste bug: https://blogs.grammatech.com/the-dangers-of-copy-and-paste
+
+Source Code
+~~~~~~~~~~~
 
 The new code is in:
 
