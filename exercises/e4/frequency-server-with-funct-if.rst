@@ -4,7 +4,7 @@
 ============================================================
 
 :Home page: https://github.com/pierre-rouleau/trying-erlang
-:Time-stamp: <2020-07-10 15:36:17, updated by Pierre Rouleau>
+:Time-stamp: <2020-07-18 11:19:30, updated by Pierre Rouleau>
 
 This page describes work related to the `exercise 4`_, the second exercise of the
 second week of the course `Concurrent Programming in Erlang`_.
@@ -1961,3 +1961,281 @@ people use with BEAM programming languages these days.
 
 
 -----------------------------------------------------------------------------
+
+
+Version 4
+---------
+
+Version 4 is a code refactoring:
+
+- reduced code size using utility functions:
+
+  - the ``call`` function that abstracts the transaction with mailbox
+    clearing, sending the command and receiving the reply, handling the
+    timeout,
+    - ``send_X`` functions that hold the details about internal protocol:
+      ``send_request`` and ``send-reply``, making it easy to identify where to
+      look for protocol conventions,
+
+- splitting of the various ``export`` statements to identify the regular API,
+  the debug AI and isolate the init/0 that has to be present but is not used
+  explicitly.
+
+It also contains a `copy/paste bug`_ fix.  Erlang code can have a lot of
+similar code.  And therefore is subject of this insidious and hard to detect
+form of bugs: you can stare at the code and because it looks familiar you
+won't see the bug. The bug was in the tracing code. But still.  A bug
+incurs a cost.
+
+.. _copy/paste bug: https://blogs.grammatech.com/the-dangers-of-copy-and-paste
+
+The new code is in:
+
+:code file: `e4/v4/frequency.erl`_
+
+.. _e4/v4/frequency.erl: e4/v4/frequency.erl
+
+The changes since last version is shown below:
+
+.. code:: diff
+
+    diff -u /Users/roup/doc/trying-erlang/exercises/e4/v3/frequency.erl /Users/roup/doc/trying-erlang/exercises/e4/v4/frequency.erl
+    --- /Users/roup/doc/trying-erlang/exercises/e4/v3/frequency.erl	2020-07-10 15:22:45.000000000 -0400
+    +++ /Users/roup/doc/trying-erlang/exercises/e4/v4/frequency.erl	2020-07-18 11:12:07.000000000 -0400
+    @@ -1,42 +1,15 @@
+     %%%  Concurrent Programming In Erlang -- The University of Kent / FutureLearn
+     %%%  Exercise  : https://www.futurelearn.com/courses/concurrent-programming-erlang/3/steps/488342
+    -%%%  v3 - += Showing size of mailbox, clearing mailbox at client & server,
+    -%%%          imposing server load by sleeping+
+    +%%%  v4 - += Compressed v3 code.
+     %%%
+    -%%% Last Modified Time-stamp: <2020-07-10 15:22:45, updated by Pierre Rouleau>
+    +%%% Last Modified Time-stamp: <2020-07-18 11:12:07, updated by Pierre Rouleau>
+     %% -----------------------------------------------------------------------------
+
+     %% What's New
+     %% ----------
+    -%% - v3.1: - Added a clear in the server's loop, before the timer:sleep call so I can
+    -%%           get several messages to accumulate.
+    -%% - v3:  - Added show_mailbox() public functions to show number of messages
+    -%%          accumulating in the server and also to see the ones accumulating in the client.
+    -%%        - Removed other debug prints I introduced in v2.1.
+    -%%        - Removed the catch-all Msg reception in loop/0 I used for debugging v2.
+    -%% - v2.1: - Fixed a bug in loop patter for set_wait: A *new* variable must be
+    -%%           used for the time: ``NewWaitTime`` otherwise it patterns match
+    -%%           only if the wait time value does *not* change!
+    -%%         - Placed clear() code close to where it's used.
+    -%%         - Added several io:format to see the clear and delay activities.
+    -%% - v2: instrument for simulating server loading:
+    -%%       - client can now timeout after CLIENT_RX_TIMEOUT (set to 1 second via a macro)
+    -%%       - Data structure change: FreDb has a TestData field.
+    -%%         For now it holds a tuple of 1 tagged value: {sleep_period, integer}
+    -%%         identifying the time the server should sleep before each receive
+    -%%         to let message accumulate in its mailbox.
+    -%%       - Added new debug command/message: set_server_load/1 which identifies
+    -%%         how long the server should sleep.
+    -%%       - Added clear/0 which clears a mailbox, printing each message removed
+    -%%         and returning the number of cleared message.
+    -%%         It is called by the client before the client sends a new request,
+    -%%         to flush previous un-processed replies.
+    -%% - v1: Providing a functional interface to the requests:
+    -%%       - allocate()
+    -%%       - deallocate(Freq)
+    -%%       - dump()
+    -%%       - stop()
+    -%%
+    +%% - v4.0: refactoring: common code placed in utility functions: call()
+    +%%         is now used by all the functional interface.  Doing this identified
+    +%%         *copy/paste* bugs.
+
+     %% Supported Transactions
+     %% ----------------------
+    @@ -136,24 +109,29 @@
+
+     -module(frequency).
+     -export([ start/0
+    -        , init/0
+             , allocate/0
+             , deallocate/1
+    -        , dump/0
+    +        , stop/0]).
+    +
+    +-export([ dump/0
+             , set_server_load/1
+             , show_mailbox/0
+    -        , show_mailbox/1
+    -        , stop/0]).
+    +        , show_mailbox/1]).
+    +
+    +-export([init/0]).
+
+    +
+    +%% -----------------------------------------------------------------------------
+     %% Data Model:
+     %%    FreqDb := { free     : [integer],
+     %%                allocated: [{integer, pid}]
+     %%                test     : sleep_period := integer
+     %%               }
+
+    +-define(CLIENT_RX_TIMEOUT, 3000).   % Timeout for client waiting for server reply.
+
+    +%% -----------------------------------------------------------------------------
+     %%% Public API
+    --define(CLIENT_RX_TIMEOUT, 3000).   % Timeout for client waiting for server reply.
+
+     %% start/0 : start the server
+     %%  return : ok | {error, Error}
+    @@ -163,66 +141,45 @@
+             Error -> {error, Error}
+         end.
+
+    +
+     %% allocate/0 : allocate a frequency for the caller's process
+     %%     return :  {ok, Freq} | {error, client_already_own, Freq{}
+    -allocate() ->
+    -    Cleared = clear(),
+    -    io:format("set_server_load(): cleared: ~w~n", [Cleared]),
+    -    frequency ! {request, self(), allocate},
+    -    receive {reply, Reply} ->
+    -             Reply
+    -    after ?CLIENT_RX_TIMEOUT -> {error, timeout}
+    -    end.
+    +allocate() -> call(frequency, allocate).
+
+     %% deallocate/1 : deallocate a specified frequency that should have
+     %%                already have been allocated by the caller's process.
+     %%       return : ok | {error, client_does_not_own, Freq}
+    -deallocate(Freq) ->
+    -    Cleared = clear(),
+    -    io:format("set_server_load(): cleared: ~w~n", [Cleared]),
+    -    frequency ! {request, self(), {deallocate, Freq}},
+    -    receive {reply, Reply} ->
+    -            Reply
+    -    after ?CLIENT_RX_TIMEOUT -> {error, timeout}
+    -    end.
+    +deallocate(Freq) -> call(frequency, {deallocate, Freq}).
+    +
+    +%%% Debugging Public API
+
+     %% dump/0 : return internal database data (should really be debug only)
+    -dump() ->
+    -    Cleared = clear(),
+    -    io:format("set_server_load(): cleared: ~w~n", [Cleared]),
+    -    frequency ! {request, self(), dump},
+    -    receive {reply, FreqDb} ->
+    -            FreqDb
+    -    after ?CLIENT_RX_TIMEOUT -> {error, timeout}
+    -    end.
+    +dump() -> call(frequency, dump).
+
+     %% set_server_load/1 : WaitTime (in milliseconds)
+     %% Return: ok | {error, timeout}
+    -set_server_load(WaitTime) ->
+    -    io:format("set_server_load()~n"),
+    -    Cleared = clear(),
+    -    io:format("set_server_load(): cleared: ~w~n", [Cleared]),
+    -    frequency ! {request, self(), {set_wait, WaitTime}},
+    -    receive {reply, Reply} ->
+    -            Reply
+    -    after ?CLIENT_RX_TIMEOUT -> {error, timeout}
+    -    end.
+    +set_server_load(WaitTime) -> call(frequency, {set_wait, WaitTime}).
+
+     % stop/0 : stop the frequency server
+    -stop() ->
+    -    clear(),
+    -    frequency ! {request, self(), stop},
+    +stop() -> call(frequency, stop).
+    +
+    +
+    +%%% Client API utility function
+    +
+    +%% call/2: send message and receive reply
+    +%% return: reply
+    +call(Server, Msg) ->
+    +    Cleared = clear(),
+    +    io:format("Before sending ~w, cleared: ~w~n", [Msg, Cleared]),
+    +    send_request(Server, Msg),
+         receive {reply, Reply} ->
+    -            Reply
+    +             Reply
+         after ?CLIENT_RX_TIMEOUT -> {error, timeout}
+         end.
+
+    -%%% Client API utility function
+    -
+     %% clear/0: clear the mailbox
+     %%   return: number of cleared messages.
+     %%   side effect: prints each cleared message on stdout.
+    -
+     clear() -> clear(0).
+     clear(ClearCount) ->
+         receive
+    @@ -232,6 +189,9 @@
+         after 0 -> {ok, ClearCount}
+         end.
+
+    +%% send_request/2: send message to server
+    +send_request(Server, Msg) -> Server ! {request, self(), Msg}.
+    +
+     %% -----------------------------------------------------------------------------
+     %%% Server - Internal process logic
+
+    @@ -251,26 +211,30 @@
+         receive
+             {request, Pid, allocate} ->
+                 {NewFreqDb, Result} = allocate(FreqDb, Pid),
+    -            Pid ! {reply, Result},
+    +            send_reply(Pid, Result),
+                 loop(NewFreqDb);
+             {request, Pid, {deallocate, Freq}}  ->
+                 {NewFreqDb, Result} = deallocate(FreqDb, Freq, Pid),
+    -            Pid! {reply, Result},
+    +            send_reply(Pid, Result),
+                 loop(NewFreqDb);
+             {request, Pid, dump} ->
+    -            Pid! {reply, FreqDb},
+    +            send_reply(Pid, FreqDb),
+                 loop(FreqDb);
+             {request, Pid, {set_wait, NewWaitTime}} ->
+                 {NewFreqDb, Result} = set_wait(FreqDb, NewWaitTime),
+    -            Pid ! {reply, Result},
+    +            send_reply(Pid, Result),
+                 loop(NewFreqDb);
+             {request, Pid, stop} ->
+    -            Pid! {reply, stopped}
+    +            send_reply(Pid, stopped)
+         end.
+
+
+    +%%% Server utility functions
+
+    -%% Frequency 'Database' management functions.
+    +send_reply(Pid, Result) -> Pid ! {reply, Result}.
+    +
+    +%% -----------------------------------------------------------------------------
+    +%%% Frequency 'Database' management functions.
+
+     %% allocate/2: FreqDb, ClientPid
+     %% allocate a frequency for ClientPid.  Allow 1 frequency per Client.
+
+    Diff finished.  Sat Jul 18 11:12:21 2020
+
+
+Looking Back
+~~~~~~~~~~~~
+
+The morale here is that using utility code to reduce duplication is a good
+thing, just as refactoring code helps detect such problems.
+
+I will eventually be looking for tools that perform static analysis (over
+Typer_ and Dialyzer_) and can
+help perform code refactoring of Erlang code.
+
+
+
+.. _Typer: http://erlang.org/doc/man/typer.html
+.. _Dialyzer: http://erlang.org/doc/man/typer.html
+
+..
+   -----------------------------------------------------------------------------
