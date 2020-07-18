@@ -4,7 +4,7 @@
 ============================================================
 
 :Home page: https://github.com/pierre-rouleau/trying-erlang
-:Time-stamp: <2020-07-18 11:21:29, updated by Pierre Rouleau>
+:Time-stamp: <2020-07-18 11:23:00, updated by Pierre Rouleau>
 
 This page describes work related to the `exercise 4`_, the second exercise of the
 second week of the course `Concurrent Programming in Erlang`_.
@@ -1973,6 +1973,7 @@ Version 4 is a code refactoring:
   - the ``call`` function that abstracts the transaction with mailbox
     clearing, sending the command and receiving the reply, handling the
     timeout,
+
     - ``send_X`` functions that hold the details about internal protocol:
       ``send_request`` and ``send-reply``, making it easy to identify where to
       look for protocol conventions,
