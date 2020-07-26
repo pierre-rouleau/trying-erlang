@@ -31,7 +31,8 @@ The list of exercises in this course I've done so far are listed here:
 
 # Book - Erlang and OTP in Action
 
-I enjoy reading `Erlang and OTP in Action`_.  Written in 2010, it describes
+I enjoy reading [Erlang and OTP in Action](https://www.manning.com/books/erlang-and-otp-in-action).
+Written in 2010, it describes
 the OTP facilities available at that time.  It has several examples as well.
 I'm planning to implement several of the examples provided in the book  and
 check what has changed in the last 10 years.
@@ -39,8 +40,6 @@ check what has changed in the last 10 years.
 This includes the following:
 
 - [A TCP-based RPC service](erlang-and-otp-in-action/otpa-1/ch3ex.rst)
-
-.. _Erlang and OTP in Action:                     https://www.manning.com/books/erlang-and-otp-in-action
 
 
 <!-- ----------------------------------------------------------------------------- -->
