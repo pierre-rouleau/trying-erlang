@@ -26,6 +26,10 @@ Commit History
 First version
 -------------
 
+:file version: `First version of prl_tr_server.erl`_
+
+.. _First version of prl_tr_server.erl:  https://github.com/pierre-rouleau/trying-erlang/blob/6bf818b0ed2422f207d96e5811f8166cf4a66f6c/erlang-and-otp-in-action/erlang/prl/prl_tr_server.erl
+
 I created the first version of the file, a gen-server behaviour empty
 template, by using Emacs Erlang gen-server skeleton, which I invoked in my
 `PEL Emacs package support for Erlang`_ by typing ``<f12> <f12> M-g``.
