@@ -19,6 +19,10 @@ Most of the code here is based on the code presented in the book
 Commit History
 ==============
 
+:file: prl_tr_server.erl_
+
+.. _prl_tr_server.erl:  https://github.com/pierre-rouleau/trying-erlang/blob/master/erlang-and-otp-in-action/erlang/prl/prl_tr_server.erl
+
 First version
 -------------
 
