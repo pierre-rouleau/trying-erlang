@@ -41,5 +41,11 @@ This includes the following:
 
 - [A TCP-based RPC service](erlang-and-otp-in-action/otpa-1/ch3ex.rst)
 
+# Related Projects
+
+You might be interested by the following on-going projects.
+
+- [about-erlang](https://github.com/pierre-rouleau/about-erlang)
+- [PEL](https://github.com/pierre-rouleau/pel#readme)
 
 <!-- ----------------------------------------------------------------------------- -->
