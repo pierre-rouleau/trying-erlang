@@ -2,7 +2,7 @@
 A collection of small Erlang snippets and modules
 
 This repository of Erlang code snippets is something I'm going to write while
-I'm in the preocess of learning Erlang, OTP and some other programming languages
+I'm in the process of learning Erlang, OTP and some other programming languages
 that run on the Erlang Vm (like Elixir).
 
 For that I am reading several Erlang books, upgrading my Emacs environment to better
